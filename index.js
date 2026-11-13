@@ -24,6 +24,10 @@ let BOT_USERNAME = '';
 let updatedCounter = 0;
 const COVER_CACHE = new Map();
 
+function isAdmin(userId) {
+  return ADMIN_IDS.includes(Number(userId));
+}
+
 function normalizeText(text) {
   if (!text) return '';
   let t = String(text).toLowerCase();
@@ -134,6 +138,14 @@ function getActiveSongs() {
   return ALL_SONGS.filter(s => s.available && isPlayable(s));
 }
 
+function deleteSongById(songId) {
+  const idx = ALL_SONGS.findIndex(s => s.id === Number(songId));
+  if (idx === -1) return null;
+  const [removed] = ALL_SONGS.splice(idx, 1);
+  saveSongs();
+  return removed;
+}
+
 function registerUser(user) {
   if (!user || !user.id) return;
   const uid = String(user.id);
@@ -177,6 +189,18 @@ function resolveUserId(initData, fallbackId) {
   if (initData && BOT_TOKEN) {
     try {
       const params = new URLSearchParams(initData);
+      const hash = params.get('hash');
+      if (hash) {
+        params.delete('hash');
+        const keys = Array.from(params.keys()).sort();
+        const dataCheckString = keys.map(k => `${k}=${params.get(k)}`).join('\n');
+        const secretKey = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
+        const calcHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+        if (calcHash === hash && params.has('user')) {
+          const u = JSON.parse(params.get('user'));
+          if (u?.id) return u.id;
+        }
+      }
       if (params.has('user')) {
         const u = JSON.parse(params.get('user'));
         if (u?.id) return u.id;
@@ -189,7 +213,6 @@ function resolveUserId(initData, fallbackId) {
   return null;
 }
 
-// استخراج و بازیابی خودکار file_id معتبر با توکن ربات فعلی
 async function resolvePlayableFile(song) {
   let lastError = 'اطلاعات فایل ناقص است';
 
@@ -258,7 +281,7 @@ loadSongs();
 loadUsers();
 
 // ---------------------------------------------------------------------------
-// سرور وب Express و API های مینی‌اپ
+// سرور وب Express و API های مینی‌اپ + پنل ادمین
 // ---------------------------------------------------------------------------
 const app = express();
 app.use(express.json());
@@ -271,7 +294,14 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/config', (req, res) => {
-  res.json({ bot_username: BOT_USERNAME, total_songs: getActiveSongs().length });
+  const userId = resolveUserId(req.query.init_data, req.query.user_id);
+  res.json({
+    bot_username: BOT_USERNAME,
+    total_songs: getActiveSongs().length,
+    total_users: Object.keys(USERS_DB.users).length,
+    total_requests: USERS_DB.requests.length,
+    is_admin: isAdmin(userId)
+  });
 });
 
 app.get('/api/songs', (req, res) => {
@@ -303,6 +333,33 @@ app.get('/api/songs', (req, res) => {
   }));
 
   res.json({ total, offset, limit, has_more: offset + items.length < total, items });
+});
+
+// حذف موزیک فقط توسط ادمین از طریق پنل مینی‌اپ
+app.delete('/api/admin/song/:id', (req, res) => {
+  const userId = resolveUserId(req.body?.init_data || req.query.init_data, req.body?.user_id || req.query.user_id);
+  if (!isAdmin(userId)) {
+    return res.status(403).json({ detail: 'دسترسی غیرمجاز! فقط ادمین اجازه حذف دارد.' });
+  }
+
+  const songId = parseInt(req.params.id, 10);
+  const removed = deleteSongById(songId);
+  if (!removed) {
+    return res.status(404).json({ detail: 'موزیک یافت نشد یا قبلاً حذف شده است.' });
+  }
+
+  res.json({
+    status: 'ok',
+    deleted: removed,
+    remaining: getActiveSongs().length
+  });
+});
+
+// دریافت لیست درخواست‌های کاربران (مخصوص پنل ادمین)
+app.get('/api/admin/requests', (req, res) => {
+  const userId = resolveUserId(req.query.init_data, req.query.user_id);
+  if (!isAdmin(userId)) return res.status(403).json({ detail: 'Forbidden' });
+  res.json({ requests: [...USERS_DB.requests].reverse().slice(0, 30) });
 });
 
 app.get('/api/cover', async (req, res) => {
@@ -491,7 +548,8 @@ function buildMainMenu(userId) {
   const text =
     `سلام! 👋 به ربات و پلیر هوشمند **GapMusic** خوش آمدید.\n\n` +
     `🎼 آرشیو موزیک‌های فعال: **${activeCount}** ترک 🎵\n` +
-    `❤️ پلی‌لیست شخصی شما: **${favCount}** موزیک\n\n` +
+    `❤️ پلی‌لیست شخصی شما: **${favCount}** موزیک\n` +
+    `📤 هر موزیکی که بفرستید به صورت خودکار به آرشیو اضافه می‌شود!\n\n` +
     `💡 نام خواننده یا آهنگ را تایپ کنید یا وارد پلیر آنلاین شوید:`;
 
   const rows = [];
@@ -514,6 +572,10 @@ function buildMainMenu(userId) {
     Markup.button.switchToCurrentChat('⚡ سرچ آنی (Inline)', ''),
     Markup.button.url('🌐 گپ ما', GROUP_URL)
   ]);
+
+  if (isAdmin(userId)) {
+    rows.push([Markup.button.callback('🛡️ پنل مدیریت ادمین', 'admin_panel')]);
+  }
 
   return { text, keyboard: Markup.inlineKeyboard(rows) };
 }
@@ -554,6 +616,9 @@ async function sendSongToChat(ctx, chatId, song, userId) {
       Markup.button.callback('🎲 آهنگ بعدی', 'random_song')
     ]
   ];
+  if (isAdmin(userId)) {
+    rows.push([Markup.button.callback('🗑️ حذف این آهنگ (ادمین)', `admdel_${song.id}`)]);
+  }
   if (MINI_APP_URL.startsWith('https://')) {
     rows.push([Markup.button.webApp('🎧 باز کردن پلیر مینی‌اپ', MINI_APP_URL)]);
   }
@@ -606,7 +671,7 @@ bot.start(async (ctx) => {
 
     if (ok) return;
 
-    await ctx.reply('⚠️ دسترسی به فایل این موزیک برقرار نشد؛ مطمئن شوید ربات در کانال مبدا ادمین است.');
+    await ctx.reply('⚠️ دسترسی به فایل این موزیک برقرار نشد.');
     return;
   }
 
@@ -614,15 +679,81 @@ bot.start(async (ctx) => {
   await ctx.replyWithMarkdown(text, keyboard);
 });
 
-// دستور خروجی گرفتن از دیتابیس بروزرسانی‌شده (مخصوص ادمین)
-bot.command('export_db', async (ctx) => {
-  if (!ADMIN_IDS.includes(ctx.from.id)) return;
-  if (!fs.existsSync(DB_FILE)) {
-    return ctx.reply('❌ فایل songs_db.json یافت نشد.');
+// دستورات مدیریت ادمین در تلگرام
+bot.command('admin', async (ctx) => {
+  if (!isAdmin(ctx.from.id)) return;
+  const msg =
+    `🛡️ **پنل مدیریت ادمین GapMusic**\n\n` +
+    `🎵 کل موزیک‌های فعال: **${getActiveSongs().length}**\n` +
+    `👥 تعداد کاربران: **${Object.keys(USERS_DB.users).length}**\n` +
+    `📩 درخواست‌های ثبت‌شده: **${USERS_DB.requests.length}**\n\n` +
+    `📌 **روش‌های حذف آهنگ:**\n` +
+    `1️⃣ داخل مینی‌اپ، روی دکمه 🗑️ کنار هر آهنگ بزنید.\n` +
+    `2️⃣ دستور \`/del کد_آهنگ\` را بفرستید (مثلاً: \`/del 125\`).`;
+
+  await ctx.replyWithMarkdown(msg, Markup.inlineKeyboard([
+    [Markup.button.webApp('🛡️ ورود به پنل مدیریتی در مینی‌اپ', MINI_APP_URL)],
+    [Markup.button.callback('📦 دریافت فایل دیتابیس', 'admin_export')]
+  ]));
+});
+
+bot.command('del', async (ctx) => {
+  if (!isAdmin(ctx.from.id)) return;
+  const parts = ctx.message.text.trim().split(/\s+/);
+  const songId = parseInt(parts[1], 10);
+  if (!songId) return ctx.reply('⚠️ فرمت صحیح: `/del 120`', { parse_mode: 'Markdown' });
+
+  const removed = deleteSongById(songId);
+  if (!removed) return ctx.reply('❌ آهنگی با این کد پیدا نشد.');
+  await ctx.reply(`🗑️ موزیک «${removed.performer} - ${removed.title}» (کد #${songId}) با موفقیت حذف شد.`);
+});
+
+bot.action('admin_panel', async (ctx) => {
+  if (!isAdmin(ctx.from.id)) return ctx.answerCbQuery('دسترسی غیرمجاز', { show_alert: true });
+  const msg =
+    `🛡️ **پنل مدیریت ادمین GapMusic**\n\n` +
+    `🎵 کل موزیک‌های فعال: **${getActiveSongs().length}**\n` +
+    `👥 تعداد کاربران: **${Object.keys(USERS_DB.users).length}**\n` +
+    `📩 درخواست‌های ثبت‌شده: **${USERS_DB.requests.length}**\n\n` +
+    `💡 برای حذف سریع: دستور \`/del کد_آهنگ\` را بفرستید یا در مینی‌اپ آیکون 🗑️ را بزنید.`;
+
+  await ctx.editMessageText(msg, {
+    parse_mode: 'Markdown',
+    ...Markup.inlineKeyboard([
+      [Markup.button.webApp('🛡️ مدیریت و حذف در مینی‌اپ', MINI_APP_URL)],
+      [Markup.button.callback('📦 دریافت فایل دیتابیس', 'admin_export')],
+      [Markup.button.callback('🔙 منوی اصلی', 'main_menu')]
+    ])
+  }).catch(() => {});
+  await ctx.answerCbQuery();
+});
+
+bot.action('admin_export', async (ctx) => {
+  if (!isAdmin(ctx.from.id)) return ctx.answerCbQuery();
+  await ctx.answerCbQuery('📦 در حال ارسال فایل...');
+  if (fs.existsSync(DB_FILE)) {
+    await ctx.replyWithDocument(
+      { source: DB_FILE, filename: 'songs_db.json' },
+      { caption: `📦 بکاپ دیتابیس | کل آهنگ‌ها: ${ALL_SONGS.length}` }
+    );
   }
+});
+
+bot.action(/^admdel_(\d+)$/, async (ctx) => {
+  if (!isAdmin(ctx.from.id)) return ctx.answerCbQuery('فقط ادمین اجازه حذف دارد!', { show_alert: true });
+  const songId = parseInt(ctx.match[1], 10);
+  const removed = deleteSongById(songId);
+  if (!removed) return ctx.answerCbQuery('قبلاً حذف شده است.', { show_alert: true });
+  await ctx.answerCbQuery(`🗑️ آهنگ #${songId} حذف شد!`, { show_alert: true });
+  await ctx.deleteMessage().catch(() => {});
+});
+
+bot.command('export_db', async (ctx) => {
+  if (!isAdmin(ctx.from.id)) return;
+  if (!fs.existsSync(DB_FILE)) return ctx.reply('❌ فایل songs_db.json یافت نشد.');
   await ctx.replyWithDocument(
     { source: DB_FILE, filename: 'songs_db.json' },
-    { caption: `📦 فایل دیتابیس بروزرسانی‌شده\n✅ کل آهنگ‌ها: ${ALL_SONGS.length}\n🔄 بروزرسانی‌های این نشست: ${updatedCounter}` }
+    { caption: `📦 فایل دیتابیس | کل آهنگ‌ها: ${ALL_SONGS.length}` }
   );
 });
 
@@ -705,6 +836,9 @@ bot.action(/^like_(\d+)$/, async (ctx) => {
       Markup.button.callback('🎲 آهنگ بعدی', 'random_song')
     ]
   ];
+  if (isAdmin(ctx.from.id)) {
+    rows.push([Markup.button.callback('🗑️ حذف این آهنگ (ادمین)', `admdel_${songId}`)]);
+  }
   if (MINI_APP_URL.startsWith('https://')) {
     rows.push([Markup.button.webApp('🎧 باز کردن پلیر مینی‌اپ', MINI_APP_URL)]);
   }
@@ -724,13 +858,15 @@ bot.action(/^page_(\d+)$/, async (ctx) => {
   await ctx.answerCbQuery();
 });
 
-// دریافت فایل‌های صوتی و جایگزینی file_id قدیمی با نسخه سالم جدید
+// اضافه کردن موزیک برای همه کاربران باز است
 bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
   const msg = ctx.message || ctx.channelPost;
   if (!msg) return next();
 
   const audio = msg.audio || (msg.document && (msg.document.mime_type || '').startsWith('audio/') ? msg.document : null);
   if (!audio) return next();
+
+  if (ctx.from) registerUser(ctx.from);
 
   const rawTitle = audio.title || (audio.file_name ? path.parse(audio.file_name).name : 'نامشخص');
   const title = cleanDisplayText(rawTitle);
@@ -751,8 +887,12 @@ bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
     saveSongs();
 
     updatedCounter++;
-    if (!ctx.channelPost && updatedCounter % 50 === 0) {
-      ctx.reply(`🔄 تا این لحظه ${updatedCounter} آهنگ قدیمی بروزرسانی و فعال شد!`).catch(() => {});
+    if (!ctx.channelPost) {
+      if (isAdmin(ctx.from?.id) && updatedCounter % 50 === 0) {
+        ctx.reply(`🔄 تا این لحظه ${updatedCounter} آهنگ بروزرسانی شد!`).catch(() => {});
+      } else if (!isAdmin(ctx.from?.id)) {
+        ctx.reply(`⚠️ این موزیک قبلاً با کد #${exists.id} در آرشیو ثبت شده است.`).catch(() => {});
+      }
     }
     return;
   }
@@ -776,6 +916,20 @@ bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
 
   ALL_SONGS.push(newSong);
   saveSongs();
+
+  if (!ctx.channelPost) {
+    await ctx.reply(`✅ موزیک شما با موفقیت به آرشیو عمومی اضافه شد!\n🎤 خواننده: ${performer}\n🎵 عنوان: ${title}\n🆔 کد موزیک: #${newId}`).catch(() => {});
+
+    // اطلاع‌رسانی به ادمین در صورت ارسال آهنگ توسط کاربر عادی
+    if (ctx.from && !isAdmin(ctx.from.id)) {
+      for (const adm of ADMIN_IDS) {
+        ctx.telegram.sendMessage(
+          adm,
+          `➕ موزیک جدید توسط کاربر اضافه شد:\n👤 ${ctx.from.first_name} (${ctx.from.id})\n🎵 ${performer} - ${title}\n🆔 کد: #${newId} (برای حذف: /del ${newId})`
+        ).catch(() => {});
+      }
+    }
+  }
 });
 
 bot.on('text', async (ctx) => {
