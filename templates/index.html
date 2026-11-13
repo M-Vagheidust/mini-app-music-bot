@@ -36,7 +36,6 @@
       overflow-x: hidden;
     }
 
-    /* Header */
     .app-header {
       padding: 16px 16px 12px;
       position: sticky;
@@ -81,6 +80,24 @@
       letter-spacing: -0.3px;
     }
 
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .admin-badge-btn {
+      background: rgba(255, 30, 66, 0.16);
+      border: 1px solid var(--crimson);
+      color: #fff;
+      border-radius: 500px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      display: none;
+    }
+
     .shuffle-fab {
       background: linear-gradient(135deg, var(--crimson), #c8102e);
       color: #fff;
@@ -94,11 +111,10 @@
       gap: 6px;
       cursor: pointer;
       box-shadow: 0 6px 20px var(--crimson-glow);
-      transition: transform 0.25s var(--ease-spring), box-shadow 0.25s var(--ease-spring);
+      transition: transform 0.25s var(--ease-spring);
     }
     .shuffle-fab:active { transform: scale(0.92); }
 
-    /* Filter Chips */
     .chips-row {
       display: flex;
       gap: 8px;
@@ -127,7 +143,6 @@
       box-shadow: 0 4px 14px var(--crimson-glow);
     }
 
-    /* Search Input */
     .search-container {
       padding: 10px 16px 6px;
       display: none;
@@ -144,7 +159,6 @@
       padding: 0 14px;
       height: 46px;
       gap: 10px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     }
 
     .sp-search-bar input {
@@ -157,7 +171,25 @@
       width: 100%;
     }
 
-    /* Quick Grid */
+    /* Admin Dashboard Banner */
+    .admin-bar {
+      margin: 10px 16px 4px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(255, 30, 66, 0.16), rgba(20, 20, 28, 0.9));
+      border: 1px solid rgba(255, 30, 66, 0.45);
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .admin-bar.visible { display: flex; }
+    .admin-stats-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
     .quick-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -174,9 +206,9 @@
       align-items: center;
       overflow: hidden;
       cursor: pointer;
-      transition: transform 0.25s var(--ease-spring), border-color 0.25s ease;
+      transition: transform 0.25s var(--ease-spring);
     }
-    .quick-card:active { transform: scale(0.96); border-color: var(--crimson); }
+    .quick-card:active { transform: scale(0.96); }
 
     .qc-cover {
       width: 56px;
@@ -212,7 +244,6 @@
     }
     .section-heading span { font-size: 12px; color: var(--crimson); font-weight: 700; }
 
-    /* Track Rows with Smooth Animations */
     .track-list {
       padding: 0 12px;
       display: flex;
@@ -228,10 +259,9 @@
       border-radius: 14px;
       background: rgba(255, 255, 255, 0.02);
       border: 1px solid transparent;
-      transition: transform 0.25s var(--ease-spring), background 0.25s ease, border-color 0.25s ease;
+      transition: transform 0.25s var(--ease-spring), background 0.25s ease;
       animation: fadeSlideUp 0.4s var(--ease-spring) both;
     }
-    .track-row:active { transform: scale(0.98); background: rgba(255, 255, 255, 0.06); }
     .track-row.active {
       background: linear-gradient(90deg, rgba(255, 30, 66, 0.16), rgba(20, 20, 26, 0.9));
       border-color: rgba(255, 30, 66, 0.45);
@@ -266,7 +296,6 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      transition: color 0.2s ease;
     }
     .track-row.active .track-title { color: var(--crimson); }
 
@@ -282,12 +311,12 @@
     .track-actions {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 2px;
     }
 
     .svg-btn {
-      width: 36px;
-      height: 36px;
+      width: 34px;
+      height: 34px;
       border: none;
       background: transparent;
       color: var(--subtext);
@@ -296,12 +325,12 @@
       justify-content: center;
       border-radius: 50%;
       cursor: pointer;
-      transition: transform 0.2s var(--ease-spring), color 0.2s ease, background 0.2s ease;
+      transition: transform 0.2s var(--ease-spring), color 0.2s ease;
     }
     .svg-btn:active { background: rgba(255, 255, 255, 0.1); transform: scale(0.86); }
     .svg-btn.liked { color: var(--crimson); }
+    .svg-btn.del-btn { color: #ff4d6d; background: rgba(255, 30, 66, 0.12); margin-right: 4px; }
 
-    /* Live Equalizer Bars */
     .eq-bars {
       display: flex;
       align-items: flex-end;
@@ -317,11 +346,7 @@
     }
     .eq-bars span:nth-child(2) { animation-delay: 0.2s; }
     .eq-bars span:nth-child(3) { animation-delay: 0.4s; }
-
-    @keyframes eqBounce {
-      0% { height: 4px; }
-      100% { height: 14px; }
-    }
+    @keyframes eqBounce { 0% { height: 4px; } 100% { height: 14px; } }
 
     .load-more {
       margin: 16px;
@@ -334,11 +359,8 @@
       font-weight: 700;
       cursor: pointer;
       width: calc(100% - 32px);
-      transition: transform 0.2s var(--ease-spring);
     }
-    .load-more:active { transform: scale(0.96); }
 
-    /* Floating Crimson Glass Mini Player */
     .sp-mini-player {
       position: fixed;
       bottom: 64px;
@@ -361,10 +383,7 @@
       opacity: 0;
       transition: transform 0.45s var(--ease-spring), opacity 0.35s ease;
     }
-    .sp-mini-player.visible {
-      transform: translateY(0);
-      opacity: 1;
-    }
+    .sp-mini-player.visible { transform: translateY(0); opacity: 1; }
 
     .mp-progress-line {
       position: absolute;
@@ -375,12 +394,7 @@
       background: rgba(255, 255, 255, 0.1);
       direction: ltr;
     }
-    .mp-progress-fill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, var(--crimson), #ff6b81);
-      transition: width 0.15s linear;
-    }
+    .mp-progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--crimson), #ff6b81); }
 
     .mp-art {
       width: 44px;
@@ -401,7 +415,6 @@
     .mp-title { font-size: 13.5px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .mp-artist { font-size: 11.5px; color: var(--crimson); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    /* Bottom Navigation */
     .bottom-nav {
       position: fixed;
       bottom: 0;
@@ -429,12 +442,9 @@
       font-weight: 600;
       cursor: pointer;
       height: 100%;
-      transition: color 0.25s ease, transform 0.2s var(--ease-spring);
     }
-    .nav-item:active { transform: scale(0.9); }
     .nav-item.active { color: var(--crimson); font-weight: 800; }
 
-    /* Full Screen Now Playing Sheet */
     .full-player {
       position: fixed;
       inset: 0;
@@ -450,11 +460,7 @@
     }
     .full-player.open { transform: translateY(0); }
 
-    .fp-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+    .fp-top { display: flex; justify-content: space-between; align-items: center; }
     .fp-top span { font-size: 12px; font-weight: 800; letter-spacing: 0.6px; color: var(--crimson); }
 
     .fp-artwork {
@@ -462,7 +468,7 @@
       height: min(300px, 75vw);
       margin: 10px auto;
       border-radius: 22px;
-      box-shadow: 0 22px 55px rgba(255, 30, 66, 0.25), 0 10px 30px rgba(0, 0, 0, 0.8);
+      box-shadow: 0 22px 55px rgba(255, 30, 66, 0.25);
       border: 1px solid rgba(255, 30, 66, 0.3);
       position: relative;
       overflow: hidden;
@@ -476,38 +482,16 @@
     .fp-artwork.playing-scale { transform: scale(1.03); }
     .fp-artwork img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
 
-    .fp-details {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-    }
+    .fp-details { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     .fp-titles { flex: 1; min-width: 0; }
     .fp-title { font-size: 21px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .fp-artist { font-size: 14px; color: var(--subtext); margin-top: 3px; }
 
     .fp-seek-wrap { margin: 14px 0; direction: ltr; }
-    .fp-seek-wrap input[type="range"] {
-      width: 100%;
-      accent-color: var(--crimson);
-      height: 5px;
-      cursor: pointer;
-    }
-    .fp-times {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      color: var(--subtext);
-      margin-top: 4px;
-    }
+    .fp-seek-wrap input[type="range"] { width: 100%; accent-color: var(--crimson); height: 5px; cursor: pointer; }
+    .fp-times { display: flex; justify-content: space-between; font-size: 11px; color: var(--subtext); margin-top: 4px; }
 
-    .fp-controls {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      direction: ltr;
-    }
-
+    .fp-controls { display: flex; justify-content: space-between; align-items: center; direction: ltr; }
     .fp-play-circle {
       width: 66px;
       height: 66px;
@@ -520,9 +504,7 @@
       justify-content: center;
       cursor: pointer;
       box-shadow: 0 8px 28px var(--crimson-glow);
-      transition: transform 0.2s var(--ease-spring);
     }
-    .fp-play-circle:active { transform: scale(0.9); }
 
     .toast {
       position: fixed;
@@ -537,22 +519,14 @@
       font-size: 12.5px;
       font-weight: 700;
       z-index: 200;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
       transition: transform 0.35s var(--ease-spring);
       max-width: 92vw;
       text-align: center;
     }
     .toast.show { transform: translateX(-50%) translateY(0); }
 
-    @keyframes fadeSlideUp {
-      from { opacity: 0; transform: translateY(12px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes fadeSlideDown {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
+    @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeSlideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     .empty-box { text-align: center; color: var(--subtext); padding: 45px 20px; font-size: 14px; }
   </style>
 </head>
@@ -566,10 +540,13 @@
         <div class="avatar-badge">G</div>
         <div class="greeting-title" id="headerTitle">GapMusic</div>
       </div>
-      <button class="shuffle-fab" onclick="playRandom()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
-        پخش شانسی
-      </button>
+      <div class="header-actions">
+        <button class="admin-badge-btn" id="adminToggleBtn" onclick="toggleAdminMode()">🛡️ پنل ادمین</button>
+        <button class="shuffle-fab" onclick="playRandom()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+          پخش شانسی
+        </button>
+      </div>
     </div>
 
     <div class="chips-row">
@@ -578,6 +555,17 @@
       <button class="sp-chip" id="chipFav" onclick="setFilter('fav')">پلی‌لیست من</button>
     </div>
   </header>
+
+  <!-- پنل آمار و مدیریت ادمین -->
+  <div class="admin-bar" id="adminBar">
+    <div class="admin-stats-row">
+      <span>🛡️ حالت مدیریت فعال (دکمه حذف کنار آهنگ‌ها باز شد)</span>
+      <span id="adminUsersCount"></span>
+    </div>
+    <div style="font-size:11.5px; color:#d1d5db;">
+      کاربران می‌توانند از طریق ارسال فایل به ربات آهنگ اضافه کنند؛ فقط شما دکمه حذف 🗑️ را می‌بینید.
+    </div>
+  </div>
 
   <div class="search-container" id="searchBoxContainer">
     <div class="sp-search-bar">
@@ -596,7 +584,6 @@
   <div class="track-list" id="trackList"></div>
   <button class="load-more" id="loadMoreBtn" style="display:none;" onclick="loadMore()">نمایش موزیک‌های بیشتر</button>
 
-  <!-- Floating Mini Player -->
   <div class="sp-mini-player" id="miniPlayer">
     <div class="mp-art" id="mpArt" onclick="openFullPlayer()">🎵</div>
     <div class="mp-info" onclick="openFullPlayer()">
@@ -612,7 +599,6 @@
     <div class="mp-progress-line"><div class="mp-progress-fill" id="mpLineFill"></div></div>
   </div>
 
-  <!-- Bottom Nav -->
   <nav class="bottom-nav">
     <div class="nav-item active" id="navHome" onclick="switchNav('home')">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 3.247a1 1 0 0 0-1 0L4 7.577V20h4.5v-6a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v6H20V7.577l-7.5-4.33zm-2-1.732a3 3 0 0 1 3 0l7.5 4.33a2 2 0 0 1 1 1.732V21a1 1 0 0 1-1 1h-6.5a1 1 0 0 1-1-1v-6h-3v6a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7.577a2 2 0 0 1 1-1.732l7.5-4.33z"/></svg>
@@ -628,7 +614,6 @@
     </div>
   </nav>
 
-  <!-- Full-Screen Now Playing Sheet -->
   <div class="full-player" id="fullPlayer">
     <div class="fp-top">
       <button class="svg-btn" style="color:#fff;" onclick="closeFullPlayer()">
@@ -700,7 +685,8 @@
     const PAUSE_SVG = '<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
     const HEART_OUTLINE = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
     const HEART_FILLED = '<svg width="20" height="20" viewBox="0 0 24 24" fill="#ff1e42"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
-    const SEND_SVG = '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
+    const SEND_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
+    const TRASH_SVG = '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
 
     let currentFilter = 'all';
     let currentSongs = [];
@@ -709,6 +695,8 @@
     const PAGE_SIZE = 60;
     let isLoading = false;
     let botUsername = '';
+    let isAdminUser = false;
+    let adminModeActive = false;
 
     let favoriteIds = new Set();
     let currentSong = null;
@@ -737,10 +725,44 @@
 
     async function loadConfig() {
       try {
-        const res = await fetch('/api/config');
+        const res = await fetch(`/api/config?init_data=${encodeURIComponent(initData)}&user_id=${userId}`);
         const data = await res.json();
         botUsername = data.bot_username || '';
+        isAdminUser = Boolean(data.is_admin);
+        if (isAdminUser) {
+          document.getElementById('adminToggleBtn').style.display = 'inline-block';
+          document.getElementById('adminUsersCount').textContent = `👥 ${data.total_users || 0} کاربر`;
+        }
       } catch (e) {}
+    }
+
+    function toggleAdminMode() {
+      adminModeActive = !adminModeActive;
+      document.getElementById('adminBar').classList.toggle('visible', adminModeActive);
+      renderSongs();
+    }
+
+    async function deleteSongAdmin(songId, title) {
+      if (!confirm(`آیا از حذف کامل موزیک «${title}» (کد #${songId}) مطمئن هستید؟`)) return;
+      try {
+        const res = await fetch(`/api/admin/song/${songId}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ init_data: initData, user_id: userId })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          currentSongs = currentSongs.filter(s => s.id !== songId);
+          totalAvailable = Math.max(0, totalAvailable - 1);
+          document.getElementById('archiveStats').textContent = `${totalAvailable.toLocaleString('fa-IR')} ترک`;
+          renderSongs();
+          showToast(`🗑️ موزیک #${songId} با موفقیت حذف شد.`);
+        } else {
+          showToast(`❌ ${data.detail || 'خطا در حذف موزیک'}`);
+        }
+      } catch (e) {
+        showToast('❌ خطا در ارتباط با سرور');
+      }
     }
 
     async function fetchCover(song, targetIds = []) {
@@ -894,6 +916,9 @@
         const eqHtml = (isCurrent && !audio.paused)
           ? '<div class="eq-bars"><span></span><span></span><span></span></div>'
           : '';
+        const delHtml = (isAdminUser && adminModeActive)
+          ? `<button class="svg-btn del-btn" onclick="deleteSongAdmin(${s.id}, '${escapeHtml(s.title).replace(/'/g, '')}')" title="حذف کامل">${TRASH_SVG}</button>`
+          : '';
 
         return `
           <div class="track-row ${isCurrent ? 'active' : ''}" style="animation-delay:${Math.min(idx * 0.02, 0.3)}s">
@@ -902,7 +927,7 @@
             </div>
             <div class="track-meta" onclick="playSongByIndex(${idx})">
               <div class="track-title" style="display:flex;align-items:center;">${eqHtml}${escapeHtml(s.title)}</div>
-              <div class="track-artist">${escapeHtml(s.performer)}</div>
+              <div class="track-artist">${escapeHtml(s.performer)} ${adminModeActive ? `• #${s.id}` : ''}</div>
             </div>
             <div class="track-actions">
               <button class="svg-btn ${isFav ? 'liked' : ''}" onclick="toggleFav(${s.id}, this)" title="علاقه‌مندی">
@@ -911,6 +936,7 @@
               <button class="svg-btn" onclick="sendToChat('${s.uid}', ${s.id})" title="ارسال فایل به پیوی">
                 ${SEND_SVG}
               </button>
+              ${delHtml}
             </div>
           </div>
         `;
@@ -938,7 +964,7 @@
       try {
         await audio.play();
       } catch (err) {
-        showToast('⚠️ ربات در کانال مبدا این آهنگ ادمین نیست یا فایل در دسترس نیست.');
+        showToast('⚠️ این ترک هنوز سینک نشده یا قابل پخش آنلاین نیست.');
       }
 
       const artUrl = await fetchCover(song, ['mpArt', 'fpArt']);
