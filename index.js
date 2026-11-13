@@ -11,7 +11,7 @@ const path = require('path');
 // ---------------------------------------------------------------------------
 const BOT_TOKEN = process.env.BOT_TOKEN || '8973013935:AAE9N-n3I8jKWg9TWu_wmZICZDaeD6zzFbw';
 const MINI_APP_URL = (process.env.MINI_APP_URL || 'https://mini-app-music-bot-production.up.railway.app').replace(/\/$/, '');
-const PORT = parseInt(process.env.PORT || '8000', 10);
+const PORT = parseInt(process.env.PORT || '8080', 10);
 const ADMIN_IDS = [849152312];
 const GROUP_URL = 'https://t.me/+k1KWTCq0FMswZjM0';
 
@@ -21,11 +21,9 @@ const USERS_DB_FILE = path.join(__dirname, 'users_db.json');
 const TELEGRAM_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 const TELEGRAM_FILE_API = `https://api.telegram.org/file/bot${BOT_TOKEN}`;
 
-// ---------------------------------------------------------------------------
-// مدیریت دیتابیس‌ها (خواندن و ذخیره اتمیک)
-// ---------------------------------------------------------------------------
 let ALL_SONGS = [];
 let USERS_DB = { users: {}, requests: [] };
+const COVER_CACHE = new Map();
 
 function normalizeText(text) {
   if (!text) return '';
@@ -123,13 +121,8 @@ function loadUsers() {
     }
     const raw = fs.readFileSync(USERS_DB_FILE, 'utf8');
     const data = JSON.parse(raw);
-    USERS_DB = {
-      users: data.users || {},
-      requests: data.requests || []
-    };
-  } catch (err) {
-    console.error('❌ خطا در خواندن users_db.json:', err.message);
-  }
+    USERS_DB = { users: data.users || {}, requests: data.requests || [] };
+  } catch (err) {}
 }
 
 function saveUsers() {
@@ -137,9 +130,7 @@ function saveUsers() {
     const tmp = `${USERS_DB_FILE}.tmp`;
     fs.writeFileSync(tmp, JSON.stringify(USERS_DB, null, 2), 'utf8');
     fs.renameSync(tmp, USERS_DB_FILE);
-  } catch (err) {
-    console.error('❌ خطا در ذخیره users_db.json:', err.message);
-  }
+  } catch (err) {}
 }
 
 function getActiveSongs() {
@@ -192,12 +183,10 @@ function verifyInitData(initData) {
     const hash = params.get('hash');
     if (!hash) return null;
     params.delete('hash');
-
     const keys = Array.from(params.keys()).sort();
     const dataCheckString = keys.map(k => `${k}=${params.get(k)}`).join('\n');
     const secretKey = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
     const calcHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
-
     if (calcHash === hash && params.has('user')) {
       return JSON.parse(params.get('user'));
     }
@@ -205,12 +194,11 @@ function verifyInitData(initData) {
   return null;
 }
 
-// بارگذاری اولیه دیتابیس‌ها
 loadSongs();
 loadUsers();
 
 // ---------------------------------------------------------------------------
-// بخش ۱: سرور وب Express و API های مینی‌اپ
+// سرور وب Express و API های ارتقایافته مینی‌اپ
 // ---------------------------------------------------------------------------
 const app = express();
 app.use(express.json());
@@ -218,27 +206,25 @@ app.use(express.static(path.join(__dirname, 'templates')));
 
 app.get('/', (req, res) => {
   const htmlPath = path.join(__dirname, 'templates', 'index.html');
-  if (fs.existsSync(htmlPath)) {
-    res.sendFile(htmlPath);
-  } else {
-    res.send('<h1>GapMusic Mini App Active</h1>');
-  }
+  if (fs.existsSync(htmlPath)) res.sendFile(htmlPath);
+  else res.send('<h1>GapMusic Mini App Active</h1>');
 });
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', songs: getActiveSongs().length });
 });
 
-// دریافت لیست موزیک‌ها با جستجوی هوشمند
+// دریافت لیست کامل موزیک‌ها با صفحه‌بندی نامحدود (Pagination)
 app.get('/api/songs', (req, res) => {
   const q = normalizeText(req.query.q || '');
-  const streamOnly = req.query.stream_only === 'true';
+  const filter = req.query.filter || 'all';
   const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
-  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 40));
+  const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
 
   let songs = [...getActiveSongs()].reverse();
-  if (streamOnly) {
-    songs = songs.filter(s => Boolean(s.file_id));
+
+  if (filter === 'popular') {
+    songs = [...getActiveSongs()].sort((a, b) => (b.plays - a.plays) || (b.likes - a.likes));
   }
 
   if (q) {
@@ -255,13 +241,40 @@ app.get('/api/songs', (req, res) => {
     title: s.title,
     performer: s.performer,
     can_stream: Boolean(s.file_id),
-    likes: s.likes || 0
+    likes: s.likes || 0,
+    plays: s.plays || 0
   }));
 
-  res.json({ total, items });
+  res.json({ total, offset, limit, has_more: offset + items.length < total, items });
 });
 
-// دریافت و تغییر وضعیت علاقه‌مندی‌ها (همگام با ربات)
+// دریافت کاور آلبوم از iTunes API به صورت خودکار با کش
+app.get('/api/cover', async (req, res) => {
+  const title = String(req.query.title || '').trim();
+  const artist = String(req.query.artist || '').trim();
+  const query = `${artist !== 'نامشخص' ? artist : ''} ${title !== 'نامشخص' ? title : ''}`.trim();
+
+  if (!query) return res.json({ artwork: null });
+  if (COVER_CACHE.has(query)) return res.json({ artwork: COVER_CACHE.get(query) });
+
+  try {
+    const resp = await axios.get('https://itunes.apple.com/search', {
+      params: { term: query, media: 'music', limit: 1 },
+      timeout: 5000
+    });
+    const results = resp.data?.results || [];
+    let artwork = null;
+    if (results.length > 0 && results[0].artworkUrl100) {
+      artwork = results[0].artworkUrl100.replace('100x100bb', '400x400bb');
+    }
+    COVER_CACHE.set(query, artwork);
+    res.json({ artwork });
+  } catch (e) {
+    res.json({ artwork: null });
+  }
+});
+
+// دریافت و تغییر وضعیت علاقه‌مندی‌ها
 app.get('/api/favorites', (req, res) => {
   const verified = verifyInitData(req.query.init_data || '');
   const userId = verified ? verified.id : req.query.user_id;
@@ -278,7 +291,8 @@ app.get('/api/favorites', (req, res) => {
       title: s.title,
       performer: s.performer,
       can_stream: Boolean(s.file_id),
-      likes: s.likes || 0
+      likes: s.likes || 0,
+      plays: s.plays || 0
     }));
 
   res.json({ favorite_ids: favIds, items });
@@ -304,15 +318,39 @@ app.get('/api/random', (req, res) => {
     id: s.id,
     title: s.title,
     performer: s.performer,
-    can_stream: true
+    can_stream: true,
+    likes: s.likes || 0
   });
 });
 
-// استریم مستقیم فایل صوتی از تلگرام به پلیر مینی‌اپ
+// استریم کامل با پشتیبانی از Range Headers (رفع مشکل پخش در WebView تلگرام و iOS/Android)
 app.get('/api/stream/:uid', async (req, res) => {
   const song = getActiveSongs().find(s => s.uid === req.params.uid || String(s.id) === req.params.uid);
-  if (!song || !song.file_id) {
-    return res.status(404).json({ detail: 'فایل صوتی یافت نشد' });
+  if (!song) return res.status(404).json({ detail: 'موزیک یافت نشد' });
+
+  // اگر آهنگ file_id نداشت، تلاش برای استخراج خودکار file_id از پیام کانال/گروه
+  if (!song.file_id && song.from_chat_id && song.message_id && ADMIN_IDS.length > 0) {
+    try {
+      const fwd = await axios.post(`${TELEGRAM_API}/forwardMessage`, {
+        chat_id: ADMIN_IDS[0],
+        from_chat_id: song.from_chat_id,
+        message_id: song.message_id,
+        disable_notification: true
+      });
+      const msg = fwd.data?.result;
+      const audioObj = msg?.audio || msg?.document;
+      if (audioObj?.file_id) {
+        song.file_id = audioObj.file_id;
+        saveSongs();
+      }
+      if (msg?.message_id) {
+        axios.post(`${TELEGRAM_API}/deleteMessage`, { chat_id: ADMIN_IDS[0], message_id: msg.message_id }).catch(() => {});
+      }
+    } catch (e) {}
+  }
+
+  if (!song.file_id) {
+    return res.status(404).json({ detail: 'فایل صوتی قابل استریم نیست؛ از دکمه ارسال به پیوی استفاده کنید.' });
   }
 
   try {
@@ -326,13 +364,31 @@ app.get('/api/stream/:uid', async (req, res) => {
 
     const filePath = fileInfo.data.result.file_path;
     const fileUrl = `${TELEGRAM_FILE_API}/${filePath}`;
-    const streamResp = await axios.get(fileUrl, { responseType: 'stream', timeout: 60000 });
+    const headers = {};
+    if (req.headers.range) {
+      headers.Range = req.headers.range;
+    }
 
+    const streamResp = await axios.get(fileUrl, {
+      headers,
+      responseType: 'stream',
+      timeout: 60000,
+      validateStatus: status => status >= 200 && status < 300
+    });
+
+    song.plays = (song.plays || 0) + 1;
+
+    res.status(streamResp.status);
     res.setHeader('Content-Type', filePath.endsWith('.m4a') ? 'audio/mp4' : 'audio/mpeg');
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+
     if (streamResp.headers['content-length']) {
       res.setHeader('Content-Length', streamResp.headers['content-length']);
     }
-    res.setHeader('Accept-Ranges', 'bytes');
+    if (streamResp.headers['content-range']) {
+      res.setHeader('Content-Range', streamResp.headers['content-range']);
+    }
 
     streamResp.data.pipe(res);
   } catch (err) {
@@ -374,7 +430,7 @@ app.post('/api/send/:uid', async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// بخش ۲: ربات تلگرام Telegraf (کاملاً همگام با مینی‌اپ)
+// ربات تلگرام Telegraf
 // ---------------------------------------------------------------------------
 const bot = new Telegraf(BOT_TOKEN);
 const userSessions = new Map();
@@ -581,7 +637,6 @@ bot.action(/^page_(\d+)$/, async (ctx) => {
   await ctx.answerCbQuery();
 });
 
-// ذخیره خودکار فایل‌های صوتی ارسال شده به ربات یا کانال
 bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
   const msg = ctx.message || ctx.channelPost;
   if (!msg) return next();
@@ -632,7 +687,6 @@ bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
   }
 });
 
-// جستجوی متنی و ثبت درخواست
 bot.on('text', async (ctx) => {
   const text = ctx.message.text.trim();
   if (!text || text.startsWith('/')) return;
@@ -687,7 +741,6 @@ bot.on('text', async (ctx) => {
   );
 });
 
-// جستجوی اینلاین
 bot.on('inline_query', async (ctx) => {
   const q = normalizeText(ctx.inlineQuery.query);
   let songs = getActiveSongs().filter(s => s.media_type === 'audio' && s.file_id);
@@ -709,9 +762,6 @@ bot.on('inline_query', async (ctx) => {
   await ctx.answerInlineQuery(results, { cache_time: 5, is_personal: true });
 });
 
-// ---------------------------------------------------------------------------
-// اجرای همزمان سرور وب و ربات (بدون کرش کردن سرور وب)
-// ---------------------------------------------------------------------------
 app.listen(PORT, async () => {
   console.log(`🚀 سرور مینی‌اپ روی پورت ${PORT} با موفقیت بالا آمد.`);
 
@@ -724,15 +774,12 @@ app.listen(PORT, async () => {
           web_app: { url: MINI_APP_URL }
         }
       });
-      console.log(`✅ دکمه منوی مینی‌اپ تنظیم شد: ${MINI_APP_URL}`);
-    } catch (e) {
-      console.warn('⚠️ عدم امکان تنظیم دکمه منو:', e.message);
-    }
+    } catch (e) {}
   }
 
   bot.launch({ dropPendingUpdates: true })
     .then(() => console.log('🤖 ربات تلگرام آنلاین شد!'))
-    .catch((err) => console.error('⚠️ خطا در اتصال ربات (سرور وب همچنان فعال است):', err.message));
+    .catch((err) => console.error('⚠️ خطا در اتصال ربات:', err.message));
 });
 
 process.once('SIGINT', () => bot.stop('SIGINT'));
