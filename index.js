@@ -21,6 +21,7 @@ const TELEGRAM_FILE_API = `https://api.telegram.org/file/bot${BOT_TOKEN}`;
 let ALL_SONGS = [];
 let USERS_DB = { users: {}, requests: [] };
 let BOT_USERNAME = '';
+let updatedCounter = 0;
 const COVER_CACHE = new Map();
 
 function normalizeText(text) {
@@ -190,6 +191,8 @@ function resolveUserId(initData, fallbackId) {
 
 // استخراج و بازیابی خودکار file_id معتبر با توکن ربات فعلی
 async function resolvePlayableFile(song) {
+  let lastError = 'اطلاعات فایل ناقص است';
+
   if (song.file_id && String(song.file_id).trim()) {
     try {
       const check = await axios.get(`${TELEGRAM_API}/getFile`, {
@@ -200,7 +203,8 @@ async function resolvePlayableFile(song) {
         return { fileId: song.file_id, filePath: check.data.result.file_path };
       }
     } catch (e) {
-      if (e.response?.data?.description?.includes('wrong file_id')) {
+      lastError = e.response?.data?.description || e.message;
+      if (lastError.includes('wrong file_id')) {
         song.file_id = '';
       }
     }
@@ -242,12 +246,12 @@ async function resolvePlayableFile(song) {
           }
         }
       } catch (e) {
-        console.error(`Forward extract failed (${targetChat}):`, e.response?.data?.description || e.message);
+        lastError = `(${targetChat}): ${e.response?.data?.description || e.message}`;
       }
     }
   }
 
-  return null;
+  return { error: lastError };
 }
 
 loadSongs();
@@ -374,9 +378,9 @@ app.get('/api/stream/:uid', async (req, res) => {
   if (!song) return res.status(404).json({ detail: 'موزیک یافت نشد' });
 
   const resolved = await resolvePlayableFile(song);
-  if (!resolved) {
+  if (!resolved || resolved.error) {
     return res.status(404).json({
-      detail: 'فایل قابل استریم نیست؛ مطمئن شوید با اکانت ادمین ربات را /start کرده‌اید.'
+      detail: `خطای تلگرام: ${resolved?.error || 'فایل قابل استریم نیست'}`
     });
   }
 
@@ -610,6 +614,18 @@ bot.start(async (ctx) => {
   await ctx.replyWithMarkdown(text, keyboard);
 });
 
+// دستور خروجی گرفتن از دیتابیس بروزرسانی‌شده (مخصوص ادمین)
+bot.command('export_db', async (ctx) => {
+  if (!ADMIN_IDS.includes(ctx.from.id)) return;
+  if (!fs.existsSync(DB_FILE)) {
+    return ctx.reply('❌ فایل songs_db.json یافت نشد.');
+  }
+  await ctx.replyWithDocument(
+    { source: DB_FILE, filename: 'songs_db.json' },
+    { caption: `📦 فایل دیتابیس بروزرسانی‌شده\n✅ کل آهنگ‌ها: ${ALL_SONGS.length}\n🔄 بروزرسانی‌های این نشست: ${updatedCounter}` }
+  );
+});
+
 bot.action('noop', (ctx) => ctx.answerCbQuery());
 
 bot.action('main_menu', async (ctx) => {
@@ -708,6 +724,7 @@ bot.action(/^page_(\d+)$/, async (ctx) => {
   await ctx.answerCbQuery();
 });
 
+// دریافت فایل‌های صوتی و جایگزینی file_id قدیمی با نسخه سالم جدید
 bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
   const msg = ctx.message || ctx.channelPost;
   if (!msg) return next();
@@ -715,24 +732,32 @@ bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
   const audio = msg.audio || (msg.document && (msg.document.mime_type || '').startsWith('audio/') ? msg.document : null);
   if (!audio) return next();
 
+  const rawTitle = audio.title || (audio.file_name ? path.parse(audio.file_name).name : 'نامشخص');
+  const title = cleanDisplayText(rawTitle);
+  const performer = cleanDisplayText(audio.performer || 'نامشخص');
+  const normSearch = normalizeText(`${title} ${performer}`);
+
   const exists = ALL_SONGS.find(s =>
-    (audio.file_unique_id && s.file_unique_id === audio.file_unique_id) ||
-    s.file_id === audio.file_id
+    (audio.file_unique_id && s.file_unique_id && s.file_unique_id === audio.file_unique_id) ||
+    (normSearch.length > 3 && s.search_text === normSearch)
   );
 
   if (exists) {
-    if (!ctx.channelPost) {
-      const m = await ctx.reply(`⚠️ این موزیک قبلاً با کد #${exists.id} ثبت شده است.`);
-      setTimeout(() => ctx.telegram.deleteMessage(ctx.chat.id, m.message_id).catch(() => {}), 5000);
+    exists.file_id = audio.file_id;
+    exists.file_unique_id = audio.file_unique_id || exists.file_unique_id;
+    exists.from_chat_id = ctx.chat.id;
+    exists.message_id = msg.message_id;
+    exists.available = true;
+    saveSongs();
+
+    updatedCounter++;
+    if (!ctx.channelPost && updatedCounter % 50 === 0) {
+      ctx.reply(`🔄 تا این لحظه ${updatedCounter} آهنگ قدیمی بروزرسانی و فعال شد!`).catch(() => {});
     }
     return;
   }
 
   const newId = ALL_SONGS.reduce((max, s) => Math.max(max, s.id), 0) + 1;
-  const rawTitle = audio.title || (audio.file_name ? path.parse(audio.file_name).name : 'نامشخص');
-  const title = cleanDisplayText(rawTitle);
-  const performer = cleanDisplayText(audio.performer || 'نامشخص');
-
   const newSong = {
     id: newId,
     uid: `${newId}_${msg.message_id}`,
@@ -742,7 +767,7 @@ bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
     file_unique_id: audio.file_unique_id || '',
     title,
     performer,
-    search_text: normalizeText(`${title} ${performer}`),
+    search_text: normSearch,
     media_type: msg.audio ? 'audio' : 'document',
     plays: 0,
     likes: 0,
@@ -751,11 +776,6 @@ bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
 
   ALL_SONGS.push(newSong);
   saveSongs();
-
-  if (!ctx.channelPost) {
-    const m = await ctx.reply(`✅ موزیک با موفقیت ذخیره شد!\n🎤 خواننده: ${performer}\n🎵 عنوان: ${title}\n📌 کد: #${newId}`);
-    setTimeout(() => ctx.telegram.deleteMessage(ctx.chat.id, m.message_id).catch(() => {}), 5000);
-  }
 });
 
 bot.on('text', async (ctx) => {
