@@ -159,6 +159,9 @@ function registerUser(user) {
       joined_at: Math.floor(Date.now() / 1000)
     };
     saveUsers();
+  } else if (fullName && USERS_DB.users[uid].name !== fullName) {
+    USERS_DB.users[uid].name = fullName;
+    saveUsers();
   }
 }
 
@@ -281,7 +284,7 @@ loadSongs();
 loadUsers();
 
 // ---------------------------------------------------------------------------
-// سرور وب Express و API های مینی‌اپ + پنل ادمین
+// سرور وب Express و API های مینی‌اپ + پروفایل تلگرام + پنل ادمین
 // ---------------------------------------------------------------------------
 const app = express();
 app.use(express.json());
@@ -295,13 +298,49 @@ app.get('/', (req, res) => {
 
 app.get('/api/config', (req, res) => {
   const userId = resolveUserId(req.query.init_data, req.query.user_id);
+  const savedUser = userId ? USERS_DB.users[String(userId)] : null;
   res.json({
     bot_username: BOT_USERNAME,
     total_songs: getActiveSongs().length,
     total_users: Object.keys(USERS_DB.users).length,
     total_requests: USERS_DB.requests.length,
-    is_admin: isAdmin(userId)
+    is_admin: isAdmin(userId),
+    user_name: savedUser?.name || ''
   });
+});
+
+// دریافت و استریم مستقیم عکس پروفایل تلگرام کاربر برای هدر مینی‌اپ
+app.get('/api/avatar/:userId', async (req, res) => {
+  const uid = req.params.userId;
+  if (!uid || uid === 'undefined') return res.status(404).end();
+
+  try {
+    const photosResp = await axios.get(`${TELEGRAM_API}/getUserProfilePhotos`, {
+      params: { user_id: uid, limit: 1 },
+      timeout: 8000
+    });
+    const photos = photosResp.data?.result?.photos;
+    if (!photos || !photos.length || !photos[0].length) {
+      return res.status(404).end();
+    }
+    const fileId = photos[0][0].file_id;
+    const fileResp = await axios.get(`${TELEGRAM_API}/getFile`, {
+      params: { file_id: fileId },
+      timeout: 8000
+    });
+    const filePath = fileResp.data?.result?.file_path;
+    if (!filePath) return res.status(404).end();
+
+    const imgResp = await axios.get(`${TELEGRAM_FILE_API}/${filePath}`, {
+      responseType: 'stream',
+      timeout: 15000
+    });
+    res.setHeader('Content-Type', 'image/jpeg');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    imgResp.data.pipe(res);
+  } catch (e) {
+    res.status(404).end();
+  }
 });
 
 app.get('/api/songs', (req, res) => {
@@ -335,7 +374,6 @@ app.get('/api/songs', (req, res) => {
   res.json({ total, offset, limit, has_more: offset + items.length < total, items });
 });
 
-// حذف موزیک فقط توسط ادمین از طریق پنل مینی‌اپ
 app.delete('/api/admin/song/:id', (req, res) => {
   const userId = resolveUserId(req.body?.init_data || req.query.init_data, req.body?.user_id || req.query.user_id);
   if (!isAdmin(userId)) {
@@ -353,13 +391,6 @@ app.delete('/api/admin/song/:id', (req, res) => {
     deleted: removed,
     remaining: getActiveSongs().length
   });
-});
-
-// دریافت لیست درخواست‌های کاربران (مخصوص پنل ادمین)
-app.get('/api/admin/requests', (req, res) => {
-  const userId = resolveUserId(req.query.init_data, req.query.user_id);
-  if (!isAdmin(userId)) return res.status(403).json({ detail: 'Forbidden' });
-  res.json({ requests: [...USERS_DB.requests].reverse().slice(0, 30) });
 });
 
 app.get('/api/cover', async (req, res) => {
@@ -679,7 +710,6 @@ bot.start(async (ctx) => {
   await ctx.replyWithMarkdown(text, keyboard);
 });
 
-// دستورات مدیریت ادمین در تلگرام
 bot.command('admin', async (ctx) => {
   if (!isAdmin(ctx.from.id)) return;
   const msg =
@@ -858,7 +888,6 @@ bot.action(/^page_(\d+)$/, async (ctx) => {
   await ctx.answerCbQuery();
 });
 
-// اضافه کردن موزیک برای همه کاربران باز است
 bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
   const msg = ctx.message || ctx.channelPost;
   if (!msg) return next();
@@ -920,7 +949,6 @@ bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
   if (!ctx.channelPost) {
     await ctx.reply(`✅ موزیک شما با موفقیت به آرشیو عمومی اضافه شد!\n🎤 خواننده: ${performer}\n🎵 عنوان: ${title}\n🆔 کد موزیک: #${newId}`).catch(() => {});
 
-    // اطلاع‌رسانی به ادمین در صورت ارسال آهنگ توسط کاربر عادی
     if (ctx.from && !isAdmin(ctx.from.id)) {
       for (const adm of ADMIN_IDS) {
         ctx.telegram.sendMessage(
@@ -1020,7 +1048,7 @@ app.listen(PORT, async () => {
       await bot.telegram.setChatMenuButton({
         menuButton: {
           type: 'web_app',
-          text: '🎧 پلیر GapMusic',
+          text: 'پلیر',
           web_app: { url: MINI_APP_URL }
         }
       });
