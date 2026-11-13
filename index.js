@@ -1048,7 +1048,7 @@ app.listen(PORT, async () => {
       await bot.telegram.setChatMenuButton({
         menuButton: {
           type: 'web_app',
-          text: 'پلیر',
+          text: 'Mini App',
           web_app: { url: MINI_APP_URL }
         }
       });
