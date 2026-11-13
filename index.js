@@ -20,6 +20,7 @@ const TELEGRAM_FILE_API = `https://api.telegram.org/file/bot${BOT_TOKEN}`;
 
 let ALL_SONGS = [];
 let USERS_DB = { users: {}, requests: [] };
+let BOT_USERNAME = '';
 const COVER_CACHE = new Map();
 
 function normalizeText(text) {
@@ -175,18 +176,6 @@ function resolveUserId(initData, fallbackId) {
   if (initData && BOT_TOKEN) {
     try {
       const params = new URLSearchParams(initData);
-      const hash = params.get('hash');
-      if (hash) {
-        params.delete('hash');
-        const keys = Array.from(params.keys()).sort();
-        const dataCheckString = keys.map(k => `${k}=${params.get(k)}`).join('\n');
-        const secretKey = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
-        const calcHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
-        if (calcHash === hash && params.has('user')) {
-          const u = JSON.parse(params.get('user'));
-          if (u?.id) return u.id;
-        }
-      }
       if (params.has('user')) {
         const u = JSON.parse(params.get('user'));
         if (u?.id) return u.id;
@@ -199,35 +188,57 @@ function resolveUserId(initData, fallbackId) {
   return null;
 }
 
-// استخراج خودکار file_id برای آهنگ‌هایی که فقط آیدی پیام دارند
-async function ensureFileId(song) {
-  if (song.file_id && String(song.file_id).trim()) return song.file_id;
-  if (!song.from_chat_id || !song.message_id || !ADMIN_IDS.length) return null;
-
-  try {
-    const fwd = await axios.post(`${TELEGRAM_API}/forwardMessage`, {
-      chat_id: ADMIN_IDS[0],
-      from_chat_id: song.from_chat_id,
-      message_id: song.message_id,
-      disable_notification: true
-    }, { timeout: 15000 });
-
-    const msg = fwd.data?.result;
-    const audioObj = msg?.audio || msg?.document || msg?.voice;
-    if (audioObj?.file_id) {
-      song.file_id = audioObj.file_id;
-      saveSongs();
+async function resolvePlayableFile(song) {
+  // ۱. تست file_id موجود
+  if (song.file_id && String(song.file_id).trim()) {
+    try {
+      const check = await axios.get(`${TELEGRAM_API}/getFile`, {
+        params: { file_id: song.file_id },
+        timeout: 10000
+      });
+      if (check.data?.ok && check.data?.result?.file_path) {
+        return { fileId: song.file_id, filePath: check.data.result.file_path };
+      }
+    } catch (e) {
+      // اگر file_id متعلق به ربات قبلی بود و خطای wrong file_id داد، پاکش می‌کنیم تا از کانال مبدا بازخوانی شود
+      if (e.response?.data?.description?.includes('wrong file_id')) {
+        song.file_id = '';
+      }
     }
-    if (msg?.message_id) {
-      axios.post(`${TELEGRAM_API}/deleteMessage`, {
-        chat_id: ADMIN_IDS[0],
-        message_id: msg.message_id
-      }).catch(() => {});
-    }
-    return song.file_id || null;
-  } catch (e) {
-    return null;
   }
+
+  // ۲. استخراج مجدد file_id از کانال/گروه مبدا با توکن ربات فعلی
+  if (song.from_chat_id && song.message_id && ADMIN_IDS.length > 0) {
+    try {
+      const fwd = await axios.post(`${TELEGRAM_API}/forwardMessage`, {
+        chat_id: ADMIN_IDS[0],
+        from_chat_id: song.from_chat_id,
+        message_id: song.message_id,
+        disable_notification: true
+      }, { timeout: 12000 });
+
+      const msg = fwd.data?.result;
+      const audioObj = msg?.audio || msg?.document || msg?.voice;
+      if (msg?.message_id) {
+        axios.post(`${TELEGRAM_API}/deleteMessage`, { chat_id: ADMIN_IDS[0], message_id: msg.message_id }).catch(() => {});
+      }
+      if (audioObj?.file_id) {
+        song.file_id = audioObj.file_id;
+        saveSongs();
+        const check2 = await axios.get(`${TELEGRAM_API}/getFile`, {
+          params: { file_id: song.file_id },
+          timeout: 10000
+        });
+        if (check2.data?.ok && check2.data?.result?.file_path) {
+          return { fileId: song.file_id, filePath: check2.data.result.file_path };
+        }
+      }
+    } catch (e) {
+      console.error('Forward extract failed:', e.response?.data?.description || e.message);
+    }
+  }
+
+  return null;
 }
 
 loadSongs();
@@ -243,8 +254,8 @@ app.get('/', (req, res) => {
   else res.send('<h1>GapMusic Mini App Active</h1>');
 });
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', songs: getActiveSongs().length });
+app.get('/api/config', (req, res) => {
+  res.json({ bot_username: BOT_USERNAME, total_songs: getActiveSongs().length });
 });
 
 app.get('/api/songs', (req, res) => {
@@ -271,7 +282,6 @@ app.get('/api/songs', (req, res) => {
     id: s.id,
     title: s.title,
     performer: s.performer,
-    can_stream: true,
     likes: s.likes || 0,
     plays: s.plays || 0
   }));
@@ -318,7 +328,6 @@ app.get('/api/favorites', (req, res) => {
       id: s.id,
       title: s.title,
       performer: s.performer,
-      can_stream: true,
       likes: s.likes || 0,
       plays: s.plays || 0
     }));
@@ -344,32 +353,24 @@ app.get('/api/random', (req, res) => {
     id: s.id,
     title: s.title,
     performer: s.performer,
-    can_stream: true,
     likes: s.likes || 0
   });
 });
 
-// استریم آنلاین همگانی برای تمام آهنگ‌ها (با استخراج خودکار file_id و پشتیبانی کامل Range)
+// استریم آنلاین با بازیابی خودکار file_id و پشتیبانی کامل از بافر و Range
 app.get('/api/stream/:uid', async (req, res) => {
   const song = getActiveSongs().find(s => s.uid === req.params.uid || String(s.id) === req.params.uid);
   if (!song) return res.status(404).json({ detail: 'موزیک یافت نشد' });
 
-  const fileId = await ensureFileId(song);
-  if (!fileId) {
-    return res.status(404).json({ detail: 'فایل صوتی قابل استریم نیست' });
+  const resolved = await resolvePlayableFile(song);
+  if (!resolved) {
+    return res.status(404).json({
+      detail: 'ربات به کانال مبدا این آهنگ دسترسی ندارد (ربات را در کانال آرشیو ادمین کنید).'
+    });
   }
 
   try {
-    const fileInfo = await axios.get(`${TELEGRAM_API}/getFile`, {
-      params: { file_id: fileId },
-      timeout: 15000
-    });
-    if (!fileInfo.data.ok) {
-      return res.status(502).json({ detail: 'خطا در دریافت فایل از تلگرام' });
-    }
-
-    const filePath = fileInfo.data.result.file_path;
-    const fileUrl = `${TELEGRAM_FILE_API}/${filePath}`;
+    const fileUrl = `${TELEGRAM_FILE_API}/${resolved.filePath}`;
     const headers = {};
     if (req.headers.range) headers.Range = req.headers.range;
 
@@ -383,7 +384,7 @@ app.get('/api/stream/:uid', async (req, res) => {
     song.plays = (song.plays || 0) + 1;
 
     res.status(streamResp.status);
-    res.setHeader('Content-Type', filePath.endsWith('.m4a') ? 'audio/mp4' : 'audio/mpeg');
+    res.setHeader('Content-Type', resolved.filePath.endsWith('.m4a') ? 'audio/mp4' : 'audio/mpeg');
     res.setHeader('Accept-Ranges', 'bytes');
     res.setHeader('Cache-Control', 'public, max-age=3600');
 
@@ -401,43 +402,44 @@ app.get('/api/stream/:uid', async (req, res) => {
   }
 });
 
-// ارسال قطعی موزیک به پیوی کاربر (با ۳ روش پشتیبان)
+// ارسال به پیوی + بازگرداندن لینک DeepLink پشتیبان برای وقتی که ربات هنوز Start نشده
 app.post('/api/send/:uid', async (req, res) => {
-  const userId = resolveUserId(req.body.init_data, req.body.user_id);
-  if (!userId) {
-    return res.status(400).json({ detail: 'لطفاً مینی‌اپ را از دکمه داخل ربات تلگرام باز کنید تا آیدی شما شناسایی شود.' });
-  }
-
   const song = getActiveSongs().find(s => s.uid === req.params.uid || String(s.id) === req.params.uid);
   if (!song) return res.status(404).json({ detail: 'موزیک یافت نشد' });
 
+  const deepLink = BOT_USERNAME ? `https://t.me/${BOT_USERNAME}?start=song_${song.id}` : '';
+  const userId = resolveUserId(req.body.init_data, req.body.user_id);
+
+  if (!userId) {
+    return res.status(400).json({
+      need_start: true,
+      deep_link: deepLink,
+      detail: 'در حال انتقال به ربات برای دریافت فایل...'
+    });
+  }
+
   const caption = `🎵 ${song.performer} - ${song.title}\n🎧 ارسال شده از مینی‌اپ GapMusic`;
-  const fileId = await ensureFileId(song);
+  const resolved = await resolvePlayableFile(song);
 
   try {
-    // روش ۱: ارسال با sendAudio
-    if (fileId) {
+    if (resolved?.fileId) {
       try {
         const r = await axios.post(`${TELEGRAM_API}/sendAudio`, {
           chat_id: userId,
-          audio: fileId,
+          audio: resolved.fileId,
           caption
         });
         if (r.data.ok) return res.json({ status: 'ok' });
       } catch (e1) {
-        // روش ۲: ارسال به صورت Document اگر فرمت فایل محدودیت Audio داشت
-        try {
-          const r2 = await axios.post(`${TELEGRAM_API}/sendDocument`, {
-            chat_id: userId,
-            document: fileId,
-            caption
-          });
-          if (r2.data.ok) return res.json({ status: 'ok' });
-        } catch (e2) {}
+        const r2 = await axios.post(`${TELEGRAM_API}/sendDocument`, {
+          chat_id: userId,
+          document: resolved.fileId,
+          caption
+        });
+        if (r2.data.ok) return res.json({ status: 'ok' });
       }
     }
 
-    // روش ۳: کپی مستقیم پیام از کانال/گروه مبدا
     if (song.from_chat_id && song.message_id) {
       const r3 = await axios.post(`${TELEGRAM_API}/copyMessage`, {
         chat_id: userId,
@@ -448,18 +450,22 @@ app.post('/api/send/:uid', async (req, res) => {
       if (r3.data.ok) return res.json({ status: 'ok' });
     }
 
-    res.status(400).json({ detail: 'ابتدا ربات را در تلگرام /start کنید تا اجازه ارسال پیام به پیوی فعال شود.' });
+    res.status(400).json({
+      need_start: true,
+      deep_link: deepLink,
+      detail: 'ربات به کانال مبدا دسترسی ندارد یا چت با ربات باز نشده است.'
+    });
   } catch (err) {
-    const tgDesc = err.response?.data?.description || '';
-    if (tgDesc.includes('bot was blocked') || tgDesc.includes('chat not found') || tgDesc.includes('initiate conversation')) {
-      return res.status(400).json({ detail: 'ابتدا وارد ربات شوید و دکمه Start را بزنید تا ربات بتواند فایل را برایتان بفرستد.' });
-    }
-    res.status(500).json({ detail: 'خطا در ارسال فایل به تلگرام' });
+    res.status(400).json({
+      need_start: true,
+      deep_link: deepLink,
+      detail: 'ابتدا باید ربات را استارت کنید.'
+    });
   }
 });
 
 // ---------------------------------------------------------------------------
-// ربات تلگرام Telegraf
+// ربات تلگرام Telegraf (با پشتیبانی از دریافت مستقیم آهنگ از لینک مینی‌اپ)
 // ---------------------------------------------------------------------------
 const bot = new Telegraf(BOT_TOKEN);
 const userSessions = new Map();
@@ -472,11 +478,11 @@ function buildMainMenu(userId) {
     `سلام! 👋 به ربات و پلیر هوشمند **GapMusic** خوش آمدید.\n\n` +
     `🎼 آرشیو موزیک‌های فعال: **${activeCount}** ترک 🎵\n` +
     `❤️ پلی‌لیست شخصی شما: **${favCount}** موزیک\n\n` +
-    `💡 نام خواننده یا آهنگ را تایپ کنید یا با دکمه زیر وارد پلیر آنلاین شوید:`;
+    `💡 نام خواننده یا آهنگ را تایپ کنید یا وارد پلیر آنلاین شوید:`;
 
   const rows = [];
   if (MINI_APP_URL.startsWith('https://')) {
-    rows.push([Markup.button.webApp('🎧 ورود به مینی‌اپ GapMusic (پخش آنلاین)', MINI_APP_URL)]);
+    rows.push([Markup.button.webApp('🎧 ورود به مینی‌اپ GapMusic', MINI_APP_URL)]);
   }
   rows.push([
     Markup.button.callback('🎵 کل موزیک‌ها', 'list_all'),
@@ -548,13 +554,14 @@ async function sendSongToChat(ctx, chatId, song, userId) {
     }
   } catch (e) {}
 
-  if (song.file_id) {
+  const resolved = await resolvePlayableFile(song);
+  if (resolved?.fileId) {
     try {
-      await ctx.telegram.sendAudio(chatId, song.file_id, extra);
+      await ctx.telegram.sendAudio(chatId, resolved.fileId, extra);
       return true;
     } catch (e) {
       try {
-        await ctx.telegram.sendDocument(chatId, song.file_id, extra);
+        await ctx.telegram.sendDocument(chatId, resolved.fileId, extra);
         return true;
       } catch (err) {}
     }
@@ -564,6 +571,15 @@ async function sendSongToChat(ctx, chatId, song, userId) {
 
 bot.start(async (ctx) => {
   registerUser(ctx.from);
+  const payload = ctx.startPayload || '';
+  if (payload.startsWith('song_')) {
+    const songId = parseInt(payload.replace('song_', ''), 10);
+    const song = getActiveSongs().find(s => s.id === songId);
+    if (song) {
+      const ok = await sendSongToChat(ctx, ctx.chat.id, song, ctx.from.id);
+      if (ok) return;
+    }
+  }
   const { text, keyboard } = buildMainMenu(ctx.from.id);
   await ctx.replyWithMarkdown(text, keyboard);
 });
@@ -793,6 +809,11 @@ bot.on('inline_query', async (ctx) => {
 
 app.listen(PORT, async () => {
   console.log(`🚀 سرور مینی‌اپ روی پورت ${PORT} با موفقیت بالا آمد.`);
+  try {
+    const me = await bot.telegram.getMe();
+    BOT_USERNAME = me.username || '';
+    console.log(`🤖 نام کاربری ربات: @${BOT_USERNAME}`);
+  } catch (e) {}
 
   if (MINI_APP_URL.startsWith('https://')) {
     try {
