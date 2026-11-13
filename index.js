@@ -188,8 +188,8 @@ function resolveUserId(initData, fallbackId) {
   return null;
 }
 
+// استخراج و بازیابی خودکار file_id معتبر با توکن ربات فعلی
 async function resolvePlayableFile(song) {
-  // ۱. تست file_id موجود
   if (song.file_id && String(song.file_id).trim()) {
     try {
       const check = await axios.get(`${TELEGRAM_API}/getFile`, {
@@ -200,41 +200,50 @@ async function resolvePlayableFile(song) {
         return { fileId: song.file_id, filePath: check.data.result.file_path };
       }
     } catch (e) {
-      // اگر file_id متعلق به ربات قبلی بود و خطای wrong file_id داد، پاکش می‌کنیم تا از کانال مبدا بازخوانی شود
       if (e.response?.data?.description?.includes('wrong file_id')) {
         song.file_id = '';
       }
     }
   }
 
-  // ۲. استخراج مجدد file_id از کانال/گروه مبدا با توکن ربات فعلی
   if (song.from_chat_id && song.message_id && ADMIN_IDS.length > 0) {
-    try {
-      const fwd = await axios.post(`${TELEGRAM_API}/forwardMessage`, {
-        chat_id: ADMIN_IDS[0],
-        from_chat_id: song.from_chat_id,
-        message_id: song.message_id,
-        disable_notification: true
-      }, { timeout: 12000 });
+    let chatId = String(song.from_chat_id).trim();
+    const candidates = [chatId];
+    if (!chatId.startsWith('-100') && chatId.startsWith('-')) {
+      candidates.push(`-100${chatId.slice(1)}`);
+    } else if (!chatId.startsWith('-')) {
+      candidates.push(`-100${chatId}`);
+    }
 
-      const msg = fwd.data?.result;
-      const audioObj = msg?.audio || msg?.document || msg?.voice;
-      if (msg?.message_id) {
-        axios.post(`${TELEGRAM_API}/deleteMessage`, { chat_id: ADMIN_IDS[0], message_id: msg.message_id }).catch(() => {});
-      }
-      if (audioObj?.file_id) {
-        song.file_id = audioObj.file_id;
-        saveSongs();
-        const check2 = await axios.get(`${TELEGRAM_API}/getFile`, {
-          params: { file_id: song.file_id },
-          timeout: 10000
-        });
-        if (check2.data?.ok && check2.data?.result?.file_path) {
-          return { fileId: song.file_id, filePath: check2.data.result.file_path };
+    for (const targetChat of candidates) {
+      try {
+        const fwd = await axios.post(`${TELEGRAM_API}/forwardMessage`, {
+          chat_id: ADMIN_IDS[0],
+          from_chat_id: targetChat,
+          message_id: song.message_id,
+          disable_notification: true
+        }, { timeout: 12000 });
+
+        const msg = fwd.data?.result;
+        const audioObj = msg?.audio || msg?.document || msg?.voice;
+        if (msg?.message_id) {
+          axios.post(`${TELEGRAM_API}/deleteMessage`, { chat_id: ADMIN_IDS[0], message_id: msg.message_id }).catch(() => {});
         }
+        if (audioObj?.file_id) {
+          song.file_id = audioObj.file_id;
+          song.from_chat_id = targetChat;
+          saveSongs();
+          const check2 = await axios.get(`${TELEGRAM_API}/getFile`, {
+            params: { file_id: song.file_id },
+            timeout: 10000
+          });
+          if (check2.data?.ok && check2.data?.result?.file_path) {
+            return { fileId: song.file_id, filePath: check2.data.result.file_path };
+          }
+        }
+      } catch (e) {
+        console.error(`Forward extract failed (${targetChat}):`, e.response?.data?.description || e.message);
       }
-    } catch (e) {
-      console.error('Forward extract failed:', e.response?.data?.description || e.message);
     }
   }
 
@@ -244,6 +253,9 @@ async function resolvePlayableFile(song) {
 loadSongs();
 loadUsers();
 
+// ---------------------------------------------------------------------------
+// سرور وب Express و API های مینی‌اپ
+// ---------------------------------------------------------------------------
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'templates')));
@@ -357,7 +369,6 @@ app.get('/api/random', (req, res) => {
   });
 });
 
-// استریم آنلاین با بازیابی خودکار file_id و پشتیبانی کامل از بافر و Range
 app.get('/api/stream/:uid', async (req, res) => {
   const song = getActiveSongs().find(s => s.uid === req.params.uid || String(s.id) === req.params.uid);
   if (!song) return res.status(404).json({ detail: 'موزیک یافت نشد' });
@@ -365,7 +376,7 @@ app.get('/api/stream/:uid', async (req, res) => {
   const resolved = await resolvePlayableFile(song);
   if (!resolved) {
     return res.status(404).json({
-      detail: 'ربات به کانال مبدا این آهنگ دسترسی ندارد (ربات را در کانال آرشیو ادمین کنید).'
+      detail: 'فایل قابل استریم نیست؛ مطمئن شوید با اکانت ادمین ربات را /start کرده‌اید.'
     });
   }
 
@@ -402,7 +413,6 @@ app.get('/api/stream/:uid', async (req, res) => {
   }
 });
 
-// ارسال به پیوی + بازگرداندن لینک DeepLink پشتیبان برای وقتی که ربات هنوز Start نشده
 app.post('/api/send/:uid', async (req, res) => {
   const song = getActiveSongs().find(s => s.uid === req.params.uid || String(s.id) === req.params.uid);
   if (!song) return res.status(404).json({ detail: 'موزیک یافت نشد' });
@@ -453,7 +463,7 @@ app.post('/api/send/:uid', async (req, res) => {
     res.status(400).json({
       need_start: true,
       deep_link: deepLink,
-      detail: 'ربات به کانال مبدا دسترسی ندارد یا چت با ربات باز نشده است.'
+      detail: 'در حال باز کردن ربات برای تحویل فایل...'
     });
   } catch (err) {
     res.status(400).json({
@@ -465,7 +475,7 @@ app.post('/api/send/:uid', async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// ربات تلگرام Telegraf (با پشتیبانی از دریافت مستقیم آهنگ از لینک مینی‌اپ)
+// ربات تلگرام Telegraf
 // ---------------------------------------------------------------------------
 const bot = new Telegraf(BOT_TOKEN);
 const userSessions = new Map();
@@ -547,13 +557,6 @@ async function sendSongToChat(ctx, chatId, song, userId) {
   const caption = `🎵 ${song.performer} - ${song.title}\n▶️ دریافت: ${song.plays} مرتبه | 🆔 #${song.id}`;
   const extra = { caption, ...Markup.inlineKeyboard(rows) };
 
-  try {
-    if (song.from_chat_id && song.message_id) {
-      await ctx.telegram.copyMessage(chatId, song.from_chat_id, song.message_id, extra);
-      return true;
-    }
-  } catch (e) {}
-
   const resolved = await resolvePlayableFile(song);
   if (resolved?.fileId) {
     try {
@@ -566,20 +569,43 @@ async function sendSongToChat(ctx, chatId, song, userId) {
       } catch (err) {}
     }
   }
+
+  if (song.from_chat_id && song.message_id) {
+    try {
+      await ctx.telegram.copyMessage(chatId, song.from_chat_id, song.message_id, extra);
+      return true;
+    } catch (e) {}
+  }
+
   return false;
 }
 
 bot.start(async (ctx) => {
   registerUser(ctx.from);
-  const payload = ctx.startPayload || '';
+
+  const rawText = ctx.message?.text || '';
+  const parts = rawText.trim().split(/\s+/);
+  const payload = (parts.length > 1 ? parts[1] : '') || ctx.startPayload || '';
+
   if (payload.startsWith('song_')) {
     const songId = parseInt(payload.replace('song_', ''), 10);
-    const song = getActiveSongs().find(s => s.id === songId);
-    if (song) {
-      const ok = await sendSongToChat(ctx, ctx.chat.id, song, ctx.from.id);
-      if (ok) return;
+    const song = ALL_SONGS.find(s => s.id === songId);
+
+    if (!song) {
+      await ctx.reply('❌ متأسفانه این موزیک در آرشیو پیدا نشد.');
+      return;
     }
+
+    const waitMsg = await ctx.reply(`⏳ در حال آماده‌سازی و ارسال «${song.title}»...`);
+    const ok = await sendSongToChat(ctx, ctx.chat.id, song, ctx.from.id);
+    await ctx.telegram.deleteMessage(ctx.chat.id, waitMsg.message_id).catch(() => {});
+
+    if (ok) return;
+
+    await ctx.reply('⚠️ دسترسی به فایل این موزیک برقرار نشد؛ مطمئن شوید ربات در کانال مبدا ادمین است.');
+    return;
   }
+
   const { text, keyboard } = buildMainMenu(ctx.from.id);
   await ctx.replyWithMarkdown(text, keyboard);
 });
