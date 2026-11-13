@@ -3,462 +3,618 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>GapMusic Pro Player</title>
+  <title>GapMusic • Spotify Edition</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" />
   <style>
     :root {
-      --bg: #090b10;
-      --surface: rgba(24, 28, 38, 0.72);
-      --surface-active: rgba(34, 41, 56, 0.92);
-      --primary: #1ed760;
-      --primary-dark: #159c44;
-      --accent: #6366f1;
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --border: rgba(255, 255, 255, 0.08);
+      --bg: #121212;
+      --bg-elevated: #181818;
+      --card: #282828;
+      --card-hover: #333333;
+      --green: #1ed760;
+      --green-press: #169c46;
+      --text: #ffffff;
+      --subtext: #b3b3b3;
+      --divider: rgba(255, 255, 255, 0.08);
     }
 
     * {
       box-sizing: border-box;
-      font-family: 'Vazirmatn', sans-serif;
+      font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, sans-serif;
       -webkit-tap-highlight-color: transparent;
+      user-select: none;
     }
 
     body {
       margin: 0;
-      padding: 0 0 110px 0;
-      background: radial-gradient(circle at top right, #161d2f 0%, var(--bg) 55%);
+      padding: 0 0 135px 0;
+      background: linear-gradient(180deg, #1f3327 0%, var(--bg) 240px);
       color: var(--text);
       min-height: 100vh;
       overflow-x: hidden;
     }
 
-    /* Header & Search */
-    header {
+    /* Header */
+    .app-header {
+      padding: 16px 16px 10px;
       position: sticky;
       top: 0;
-      z-index: 30;
-      background: rgba(9, 11, 16, 0.85);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      padding: 14px 16px 12px;
-      border-bottom: 1px solid var(--border);
+      z-index: 20;
+      background: rgba(18, 18, 18, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
     }
 
-    .top-bar {
+    .header-row {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      justify-content: space-between;
+      margin-bottom: 14px;
     }
 
-    .brand {
+    .greeting {
       display: flex;
       align-items: center;
       gap: 10px;
     }
 
-    .brand-logo {
-      width: 36px;
-      height: 36px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
+    .avatar-badge {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--green);
+      color: #000;
+      font-weight: 900;
+      font-size: 15px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
-      box-shadow: 0 4px 15px rgba(30, 215, 96, 0.3);
     }
 
-    .brand-text h1 {
-      margin: 0;
-      font-size: 17px;
+    .greeting-title {
+      font-size: 19px;
       font-weight: 800;
       letter-spacing: -0.3px;
     }
 
-    .brand-text span {
-      font-size: 11px;
-      color: var(--muted);
-    }
-
-    .shuffle-pill {
-      background: linear-gradient(135deg, rgba(30, 215, 96, 0.16), rgba(99, 102, 241, 0.16));
-      border: 1px solid rgba(30, 215, 96, 0.35);
-      color: var(--primary);
-      padding: 7px 14px;
-      border-radius: 99px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
+    .shuffle-fab {
+      background: var(--green);
+      color: #000;
+      border: none;
+      border-radius: 500px;
+      padding: 8px 16px;
+      font-size: 12.5px;
+      font-weight: 800;
       display: flex;
       align-items: center;
       gap: 6px;
-      transition: transform 0.15s;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(30, 215, 96, 0.3);
+      transition: transform 0.12s;
     }
+    .shuffle-fab:active { transform: scale(0.95); }
 
-    .shuffle-pill:active { transform: scale(0.95); }
-
-    .search-wrapper {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
-
-    .search-box {
-      width: 100%;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 11px 40px 11px 14px;
-      border-radius: 14px;
-      font-size: 13.5px;
-      outline: none;
-      transition: 0.2s;
-    }
-
-    .search-box:focus {
-      border-color: var(--primary);
-      background: rgba(255, 255, 255, 0.09);
-      box-shadow: 0 0 0 3px rgba(30, 215, 96, 0.12);
-    }
-
-    .search-icon {
-      position: absolute;
-      right: 13px;
-      color: var(--muted);
-      font-size: 15px;
-      pointer-events: none;
-    }
-
-    /* Filter Chips */
-    .chips {
+    /* Chips */
+    .chips-row {
       display: flex;
       gap: 8px;
-      margin-top: 12px;
       overflow-x: auto;
       scrollbar-width: none;
     }
-    .chips::-webkit-scrollbar { display: none; }
+    .chips-row::-webkit-scrollbar { display: none; }
 
-    .chip {
+    .sp-chip {
+      background: #2a2a2a;
+      color: var(--text);
+      border: none;
+      border-radius: 500px;
       padding: 7px 15px;
-      border-radius: 99px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border);
-      color: var(--muted);
       font-size: 12.5px;
       font-weight: 600;
       white-space: nowrap;
       cursor: pointer;
-      transition: 0.2s;
+      transition: background 0.15s;
     }
-
-    .chip.active {
-      background: var(--primary);
-      color: #050806;
-      border-color: var(--primary);
+    .sp-chip.active {
+      background: var(--green);
+      color: #000;
       font-weight: 800;
     }
 
-    /* Song List */
-    .song-list {
-      padding: 12px 14px;
+    /* Search View */
+    .search-container {
+      padding: 0 16px 12px;
+      display: none;
+    }
+    .search-container.visible { display: block; }
+
+    .sp-search-bar {
+      background: #ffffff;
+      border-radius: 8px;
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      padding: 0 12px;
+      height: 44px;
       gap: 10px;
     }
 
-    .song-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 10px;
+    .sp-search-bar input {
+      border: none;
+      outline: none;
+      background: transparent;
+      color: #121212;
+      font-size: 14px;
+      font-weight: 600;
+      width: 100%;
+    }
+
+    /* Quick Grid (Spotify Android Top Picks) */
+    .quick-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 4px 16px 14px;
+    }
+
+    .quick-card {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      height: 54px;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .quick-card:active { background: rgba(255, 255, 255, 0.16); }
+
+    .qc-cover {
+      width: 54px;
+      height: 54px;
+      flex-shrink: 0;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+    }
+    .qc-cover img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+
+    .qc-title {
+      padding: 0 10px;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .section-heading {
+      padding: 6px 16px 8px;
+      font-size: 16px;
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .section-heading span { font-size: 12px; color: var(--subtext); font-weight: 500; }
+
+    /* Track Rows (Spotify Style) */
+    .track-list {
+      padding: 0 12px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .track-row {
       display: flex;
       align-items: center;
       gap: 12px;
-      transition: all 0.2s ease;
+      padding: 8px;
+      border-radius: 8px;
+      transition: background 0.15s;
     }
+    .track-row:active { background: rgba(255, 255, 255, 0.07); }
 
-    .song-card.playing {
-      background: linear-gradient(90deg, rgba(30, 215, 96, 0.14), rgba(24, 28, 38, 0.9));
-      border-color: rgba(30, 215, 96, 0.5);
-    }
-
-    .cover-thumb {
-      width: 50px;
-      height: 50px;
-      border-radius: 12px;
+    .track-cover {
+      width: 48px;
+      height: 48px;
+      border-radius: 6px;
       flex-shrink: 0;
       position: relative;
       overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
       font-weight: 800;
-      color: rgba(255,255,255,0.9);
+      font-size: 18px;
       cursor: pointer;
     }
+    .track-cover img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
 
-    .cover-thumb img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      position: absolute;
-      inset: 0;
-    }
-
-    .song-info {
+    .track-meta {
       flex: 1;
       min-width: 0;
       cursor: pointer;
     }
 
-    .song-title {
+    .track-title {
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 600;
       color: var(--text);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .track-row.active .track-title { color: var(--green); font-weight: 700; }
 
-    .song-card.playing .song-title { color: var(--primary); }
-
-    .song-artist {
+    .track-artist {
       font-size: 12px;
-      color: var(--muted);
-      margin-top: 3px;
+      color: var(--subtext);
+      margin-top: 2px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    .actions {
+    .track-actions {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
     }
 
-    .icon-btn {
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      border: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text);
+    .svg-btn {
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: transparent;
+      color: var(--subtext);
       display: flex;
       align-items: center;
       justify-content: center;
+      border-radius: 50%;
       cursor: pointer;
-      font-size: 14px;
-      transition: 0.15s;
     }
+    .svg-btn:active { background: rgba(255, 255, 255, 0.1); transform: scale(0.92); }
+    .svg-btn.liked { color: var(--green); }
 
-    .icon-btn:active { transform: scale(0.9); }
-
-    .icon-btn.play-btn {
-      background: var(--primary);
-      color: #000;
-      border: none;
-      font-weight: bold;
-    }
-
-    .load-more-btn {
-      margin: 8px auto 16px;
-      background: rgba(255, 255, 255, 0.07);
-      border: 1px solid var(--border);
+    .load-more {
+      margin: 14px 16px;
+      padding: 12px;
+      border-radius: 500px;
+      background: transparent;
+      border: 1px solid #535353;
       color: var(--text);
-      padding: 11px 24px;
-      border-radius: 14px;
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
-      display: block;
-      width: 100%;
+      width: calc(100% - 32px);
     }
 
-    /* Mini Floating Player */
-    .mini-player {
+    /* Spotify Floating Mini Player (Above Bottom Nav) */
+    .sp-mini-player {
       position: fixed;
-      bottom: 10px;
-      left: 10px;
-      right: 10px;
-      z-index: 40;
-      background: rgba(20, 25, 36, 0.94);
-      backdrop-filter: blur(22px);
-      -webkit-backdrop-filter: blur(22px);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      border-radius: 20px;
-      padding: 10px 14px;
-      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.65);
+      bottom: 62px;
+      left: 8px;
+      right: 8px;
+      height: 58px;
+      background: #24292e;
+      border-radius: 8px;
+      padding: 6px 10px;
       display: none;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .mini-player.visible { display: flex; }
-
-    .mp-main {
-      display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      z-index: 40;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+    }
+    .sp-mini-player.visible { display: flex; }
+
+    .mp-progress-line {
+      position: absolute;
+      bottom: 0;
+      left: 8px;
+      right: 8px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.2);
+      direction: ltr;
+    }
+    .mp-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: #ffffff;
     }
 
-    .mp-cover {
-      width: 46px;
-      height: 46px;
-      border-radius: 12px;
-      overflow: hidden;
+    .mp-art {
+      width: 42px;
+      height: 42px;
+      border-radius: 6px;
       flex-shrink: 0;
       position: relative;
+      overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
       font-weight: bold;
+      cursor: pointer;
     }
+    .mp-art img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
 
-    .mp-cover img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      position: absolute;
-      inset: 0;
-    }
-
-    .mp-meta {
+    .mp-info {
       flex: 1;
       min-width: 0;
       cursor: pointer;
     }
+    .mp-title { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mp-artist { font-size: 11.5px; color: var(--subtext); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    .mp-title {
-      font-size: 13.5px;
-      font-weight: 800;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .mp-artist {
-      font-size: 11.5px;
-      color: var(--primary);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .mp-controls {
+    /* Bottom Navigation Bar (Spotify Android) */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      background: linear-gradient(180deg, rgba(18,18,18,0.92), #000000);
+      backdrop-filter: blur(16px);
       display: flex;
+      justify-content: space-around;
       align-items: center;
-      gap: 8px;
+      z-index: 45;
+      border-top: 1px solid var(--divider);
     }
 
-    .ctrl-btn {
-      background: none;
-      border: none;
-      color: var(--text);
-      font-size: 18px;
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      color: var(--subtext);
+      font-size: 10.5px;
+      font-weight: 600;
       cursor: pointer;
-      padding: 4px;
+      height: 100%;
     }
+    .nav-item.active { color: var(--text); }
 
-    .ctrl-btn.main {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: var(--primary);
-      color: #000;
+    /* Full Screen Now Playing Modal */
+    .full-player {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: linear-gradient(180deg, #28382e 0%, #121212 75%);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px 24px 34px;
+      transform: translateY(100%);
+      transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .full-player.open { transform: translateY(0); }
+
+    .fp-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .fp-top span { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; color: var(--subtext); }
+
+    .fp-artwork {
+      width: min(310px, 76vw);
+      height: min(310px, 76vw);
+      margin: 10px auto;
+      border-radius: 12px;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.65);
+      position: relative;
+      overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
-      box-shadow: 0 4px 14px rgba(30, 215, 96, 0.4);
+      font-size: 64px;
+      font-weight: 900;
     }
+    .fp-artwork img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
 
-    .progress-row {
+    .fp-details {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 8px;
-      font-size: 10.5px;
-      color: var(--muted);
-      direction: ltr;
+      gap: 12px;
     }
+    .fp-titles { flex: 1; min-width: 0; }
+    .fp-title { font-size: 20px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fp-artist { font-size: 14px; color: var(--subtext); margin-top: 3px; }
 
-    input[type="range"] {
-      flex: 1;
-      accent-color: var(--primary);
+    .fp-seek-wrap { margin: 12px 0; direction: ltr; }
+    .fp-seek-wrap input[type="range"] {
+      width: 100%;
+      accent-color: #ffffff;
       height: 4px;
       cursor: pointer;
     }
-
-    .status-banner {
+    .fp-times {
+      display: flex;
+      justify-content: space-between;
       font-size: 11px;
-      color: #fbbf24;
-      text-align: center;
-      display: none;
+      color: var(--subtext);
+      margin-top: 4px;
     }
 
-    .empty-msg {
-      text-align: center;
-      color: var(--muted);
-      padding: 45px 20px;
-      font-size: 14px;
+    .fp-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      direction: ltr;
     }
+
+    .fp-play-circle {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #ffffff;
+      color: #000000;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(255, 255, 255, 0.2);
+    }
+
+    .toast {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-80px);
+      background: #ffffff;
+      color: #121212;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 700;
+      z-index: 200;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+      transition: transform 0.25s ease;
+      max-width: 90vw;
+      text-align: center;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    .empty-box { text-align: center; color: var(--subtext); padding: 40px 20px; font-size: 14px; }
   </style>
 </head>
 <body>
-  <header>
-    <div class="top-bar">
-      <div class="brand">
-        <div class="brand-logo">🎧</div>
-        <div class="brand-text">
-          <h1>GapMusic</h1>
-          <span id="totalCounter">در حال اتصال به آرشیو...</span>
-        </div>
+
+  <div id="toast" class="toast"></div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-row">
+      <div class="greeting">
+        <div class="avatar-badge">G</div>
+        <div class="greeting-title" id="headerTitle">GapMusic</div>
       </div>
-      <button class="shuffle-pill" onclick="playRandom()">🎲 پخش شانسی</button>
+      <button class="shuffle-fab" onclick="playRandom()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+        پخش شانسی
+      </button>
     </div>
 
-    <div class="search-wrapper">
-      <span class="search-icon">🔍</span>
-      <input type="text" id="searchInput" class="search-box" placeholder="جستجو بین هزاران آهنگ و خواننده..." oninput="onSearch()" />
-    </div>
-
-    <div class="chips">
-      <div class="chip active" id="chipAll" onclick="setFilter('all')">🎵 همه موزیک‌ها</div>
-      <div class="chip" id="chipPopular" onclick="setFilter('popular')">🔥 پرطرفدارترین‌ها</div>
-      <div class="chip" id="chipFav" onclick="setFilter('fav')">❤️ پلی‌لیست من</div>
+    <div class="chips-row" id="chipsRow">
+      <button class="sp-chip active" id="chipAll" onclick="setFilter('all')">همه موزیک‌ها</button>
+      <button class="sp-chip" id="chipPopular" onclick="setFilter('popular')">پرطرفدارترین‌ها</button>
+      <button class="sp-chip" id="chipFav" onclick="setFilter('fav')">پلی‌لیست من</button>
     </div>
   </header>
 
-  <div id="songList" class="song-list">
-    <div class="empty-msg">در حال بارگذاری موزیک‌ها...</div>
-  </div>
-  <button id="loadMoreBtn" class="load-more-btn" style="display:none;" onclick="loadMore()">⬇️ نمایش موزیک‌های بیشتر</button>
-
-  <!-- Floating Glass Player -->
-  <div id="miniPlayer" class="mini-player">
-    <div class="status-banner" id="playerStatus"></div>
-    <div class="mp-main">
-      <div class="mp-cover" id="mpCoverBox">🎵</div>
-      <div class="mp-meta">
-        <div class="mp-title" id="pTitle">انتخاب موزیک</div>
-        <div class="mp-artist" id="pArtist">GapMusic</div>
-      </div>
-      <div class="mp-controls">
-        <button class="ctrl-btn" onclick="playPrev()" title="قبلی">⏮</button>
-        <button class="ctrl-btn main" id="playPauseBtn" onclick="togglePlay()">▶</button>
-        <button class="ctrl-btn" onclick="playNext()" title="بعدی">⏭</button>
-      </div>
+  <!-- Search Input (Shown in Search Tab) -->
+  <div class="search-container" id="searchBoxContainer">
+    <div class="sp-search-bar">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#121212"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      <input type="text" id="searchInput" placeholder="نام آهنگ یا خواننده را بنویسید..." oninput="onSearch()" />
     </div>
-    <div class="progress-row">
-      <span id="curTime">0:00</span>
-      <input type="range" id="seekBar" value="0" min="0" max="100" oninput="seekAudio()" />
-      <span id="durTime">0:00</span>
+  </div>
+
+  <!-- Spotify 2-Column Quick Grid -->
+  <div class="quick-grid" id="quickGrid"></div>
+
+  <div class="section-heading">
+    <div id="sectionTitle">جدیدترین موزیک‌ها</div>
+    <span id="archiveStats">در حال بارگذاری...</span>
+  </div>
+
+  <!-- Track List -->
+  <div class="track-list" id="trackList"></div>
+  <button class="load-more" id="loadMoreBtn" style="display:none;" onclick="loadMore()">نمایش موزیک‌های بیشتر</button>
+
+  <!-- Floating Mini Player -->
+  <div class="sp-mini-player" id="miniPlayer">
+    <div class="mp-art" id="mpArt" onclick="openFullPlayer()">🎵</div>
+    <div class="mp-info" onclick="openFullPlayer()">
+      <div class="mp-title" id="mpTitle">انتخاب موزیک</div>
+      <div class="mp-artist" id="mpArtist">GapMusic</div>
+    </div>
+    <button class="svg-btn" id="mpFavBtn" onclick="toggleCurrentFav()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+    </button>
+    <button class="svg-btn" style="color:#fff;" id="mpPlayBtn" onclick="togglePlay()">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <div class="mp-progress-line"><div class="mp-progress-fill" id="mpLineFill"></div></div>
+  </div>
+
+  <!-- Bottom Navigation Bar -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" id="navHome" onclick="switchNav('home')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 3.247a1 1 0 0 0-1 0L4 7.577V20h4.5v-6a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v6H20V7.577l-7.5-4.33zm-2-1.732a3 3 0 0 1 3 0l7.5 4.33a2 2 0 0 1 1 1.732V21a1 1 0 0 1-1 1h-6.5a1 1 0 0 1-1-1v-6h-3v6a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7.577a2 2 0 0 1 1-1.732l7.5-4.33z"/></svg>
+      <span>خانه</span>
+    </div>
+    <div class="nav-item" id="navSearch" onclick="switchNav('search')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M10.533 1.279c-5.18 0-9.407 4.14-9.407 9.279s4.226 9.279 9.407 9.279c2.234 0 4.29-.77 5.907-2.058l4.353 4.353a1 1 0 1 0 1.414-1.414l-4.344-4.344a9.157 9.157 0 0 0 2.077-5.816c0-5.14-4.226-9.28-9.407-9.28zm-7.407 9.279c0-4.006 3.302-7.28 7.407-7.28s7.407 3.274 7.407 7.28-3.302 7.279-7.407 7.279-7.407-3.273-7.407-7.28z"/></svg>
+      <span>جستجو</span>
+    </div>
+    <div class="nav-item" id="navLib" onclick="switchNav('lib')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M3 22a1 1 0 0 1-1-1V3a1 1 0 0 1 2 0v18a1 1 0 0 1-1 1zM15.5 2.134A1 1 0 0 0 14 3v18a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V6.464a1 1 0 0 0-.5-.866l-6-3.464zM9 2a1 1 0 0 0-1 1v18a1 1 0 1 0 2 0V3a1 1 0 0 0-1-1z"/></svg>
+      <span>کتابخانه من</span>
+    </div>
+  </nav>
+
+  <!-- Full-Screen Now Playing Sheet -->
+  <div class="full-player" id="fullPlayer">
+    <div class="fp-top">
+      <button class="svg-btn" style="color:#fff;" onclick="closeFullPlayer()">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+      </button>
+      <span>در حال پخش از GAPMUSIC</span>
+      <button class="svg-btn" style="color:#fff;" onclick="sendCurrentToChat()" title="ارسال فایل به پیوی">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+      </button>
+    </div>
+
+    <div class="fp-artwork" id="fpArt">🎵</div>
+
+    <div>
+      <div class="fp-details">
+        <div class="fp-titles">
+          <div class="fp-title" id="fpTitle">عنوان آهنگ</div>
+          <div class="fp-artist" id="fpArtist">نام خواننده</div>
+        </div>
+        <button class="svg-btn" id="fpFavBtn" onclick="toggleCurrentFav()">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </button>
+      </div>
+
+      <div class="fp-seek-wrap">
+        <input type="range" id="fpSeek" value="0" min="0" max="100" oninput="seekAudio()" />
+        <div class="fp-times">
+          <span id="fpCur">0:00</span>
+          <span id="fpDur">0:00</span>
+        </div>
+      </div>
+
+      <div class="fp-controls">
+        <button class="svg-btn" style="color:#1ed760;" onclick="playRandom()" title="شانسی">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+        </button>
+        <button class="svg-btn" style="color:#fff;" onclick="playPrev()">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+        </button>
+        <button class="fp-play-circle" id="fpPlayBtn" onclick="togglePlay()">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button class="svg-btn" style="color:#fff;" onclick="playNext()">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        </button>
+        <button class="svg-btn" style="color:#fff;" onclick="sendCurrentToChat()" title="ارسال به پیوی">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -469,18 +625,25 @@
     if (tg) {
       tg.ready();
       tg.expand();
-      tg.setHeaderColor?.('#090b10');
-      tg.setBackgroundColor?.('#090b10');
+      tg.setHeaderColor?.('#121212');
+      tg.setBackgroundColor?.('#121212');
     }
 
     const initData = tg?.initData || '';
-    const userId = tg?.initDataUnsafe?.user?.id || '';
+    let userId = tg?.initDataUnsafe?.user?.id || localStorage.getItem('gm_uid') || '';
+    if (userId) localStorage.setItem('gm_uid', userId);
+
+    const PLAY_SVG = '<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+    const PAUSE_SVG = '<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+    const HEART_OUTLINE = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+    const HEART_FILLED = '<svg width="20" height="20" viewBox="0 0 24 24" fill="#1ed760"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
+    const SEND_SVG = '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
 
     let currentFilter = 'all';
     let currentSongs = [];
     let totalAvailable = 0;
     let currentOffset = 0;
-    const PAGE_SIZE = 50;
+    const PAGE_SIZE = 60;
     let isLoading = false;
 
     let favoriteIds = new Set();
@@ -489,48 +652,44 @@
     const coverCache = new Map();
 
     const audio = document.getElementById('audioPlayer');
-    const playPauseBtn = document.getElementById('playPauseBtn');
-    const seekBar = document.getElementById('seekBar');
-    const statusBanner = document.getElementById('playerStatus');
+    const COLORS = ['#1db954', '#e13300', '#8d67ab', '#1e3264', '#bc5900', '#0d73ec', '#503750'];
 
-    const GRADIENTS = [
-      'linear-gradient(135deg, #1db954, #191414)',
-      'linear-gradient(135deg, #6366f1, #ec4899)',
-      'linear-gradient(135deg, #f59e0b, #ef4444)',
-      'linear-gradient(135deg, #06b6d4, #3b82f6)',
-      'linear-gradient(135deg, #8b5cf6, #10b981)',
-      'linear-gradient(135deg, #f43f5e, #fb923c)'
-    ];
-
-    function getGradient(id) {
-      return GRADIENTS[Math.abs(id || 0) % GRADIENTS.length];
+    function getColor(id) {
+      return COLORS[Math.abs(id || 0) % COLORS.length];
     }
 
-    async function fetchCover(song, imgContainerId) {
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3200);
+    }
+
+    async function fetchCover(song, targetIds = []) {
       const key = `${song.performer}_${song.title}`;
       if (coverCache.has(key)) {
         const url = coverCache.get(key);
-        if (url) applyCoverToEl(imgContainerId, url);
+        if (url) targetIds.forEach(id => applyImg(id, url));
         return url;
       }
       try {
         const res = await fetch(`/api/cover?title=${encodeURIComponent(song.title)}&artist=${encodeURIComponent(song.performer)}`);
         const data = await res.json();
         coverCache.set(key, data.artwork || null);
-        if (data.artwork) applyCoverToEl(imgContainerId, data.artwork);
+        if (data.artwork) targetIds.forEach(id => applyImg(id, data.artwork));
         return data.artwork;
       } catch (e) {
         return null;
       }
     }
 
-    function applyCoverToEl(elId, url) {
+    function applyImg(elId, url) {
       const el = document.getElementById(elId);
-      if (!el || !url) return;
-      el.innerHTML = `<img src="${url}" alt="cover" loading="lazy" />`;
+      if (el && url) el.innerHTML = `<img src="${url}" alt="art" loading="lazy" />`;
     }
 
     async function loadFavorites() {
+      if (!userId && !initData) return;
       try {
         const res = await fetch(`/api/favorites?init_data=${encodeURIComponent(initData)}&user_id=${userId}`);
         const data = await res.json();
@@ -538,6 +697,7 @@
         if (currentFilter === 'fav') {
           currentSongs = data.items || [];
           document.getElementById('loadMoreBtn').style.display = 'none';
+          document.getElementById('archiveStats').textContent = `${currentSongs.length} موزیک لایک‌شده`;
           renderSongs();
         }
       } catch (e) {}
@@ -550,17 +710,16 @@
       if (reset) {
         currentOffset = 0;
         currentSongs = [];
-        document.getElementById('songList').innerHTML = '<div class="empty-msg">در حال دریافت موزیک‌ها...</div>';
+        document.getElementById('trackList').innerHTML = '<div class="empty-box">در حال دریافت آرشیو...</div>';
       }
 
       const q = document.getElementById('searchInput').value.trim();
       try {
-        const url = `/api/songs?q=${encodeURIComponent(q)}&filter=${currentFilter}&offset=${currentOffset}&limit=${PAGE_SIZE}`;
-        const res = await fetch(url);
+        const res = await fetch(`/api/songs?q=${encodeURIComponent(q)}&filter=${currentFilter}&offset=${currentOffset}&limit=${PAGE_SIZE}`);
         const data = await res.json();
 
         totalAvailable = data.total || 0;
-        document.getElementById('totalCounter').textContent = `${totalAvailable.toLocaleString('fa-IR')} موزیک فعال در آرشیو`;
+        document.getElementById('archiveStats').textContent = `${totalAvailable.toLocaleString('fa-IR')} ترک`;
 
         currentSongs = reset ? (data.items || []) : [...currentSongs, ...(data.items || [])];
         currentOffset = currentSongs.length;
@@ -568,14 +727,20 @@
         const moreBtn = document.getElementById('loadMoreBtn');
         if (data.has_more) {
           moreBtn.style.display = 'block';
-          moreBtn.textContent = `⬇️ نمایش بیشتر (${currentSongs.length} از ${totalAvailable})`;
+          moreBtn.textContent = `نمایش موزیک‌های بیشتر (${currentSongs.length} از ${totalAvailable})`;
         } else {
           moreBtn.style.display = 'none';
         }
 
+        if (reset && !q && currentFilter === 'all') {
+          renderQuickGrid(currentSongs.slice(0, 6));
+        } else {
+          document.getElementById('quickGrid').innerHTML = '';
+        }
+
         renderSongs();
       } catch (e) {
-        document.getElementById('songList').innerHTML = '<div class="empty-msg">خطا در ارتباط با سرور</div>';
+        document.getElementById('trackList').innerHTML = '<div class="empty-box">خطا در ارتباط با سرور</div>';
       } finally {
         isLoading = false;
       }
@@ -585,13 +750,36 @@
       fetchSongs(false);
     }
 
+    function switchNav(tab) {
+      document.getElementById('navHome').classList.toggle('active', tab === 'home');
+      document.getElementById('navSearch').classList.toggle('active', tab === 'search');
+      document.getElementById('navLib').classList.toggle('active', tab === 'lib');
+
+      const searchCont = document.getElementById('searchBoxContainer');
+      if (tab === 'search') {
+        searchCont.classList.add('visible');
+        document.getElementById('headerTitle').textContent = 'جستجو';
+        document.getElementById('searchInput').focus();
+      } else {
+        searchCont.classList.remove('visible');
+        document.getElementById('headerTitle').textContent = tab === 'lib' ? 'کتابخانه من' : 'GapMusic';
+      }
+
+      if (tab === 'lib') setFilter('fav');
+      else if (tab === 'home') setFilter('all');
+    }
+
     function setFilter(filter) {
       currentFilter = filter;
       document.getElementById('chipAll').classList.toggle('active', filter === 'all');
       document.getElementById('chipPopular').classList.toggle('active', filter === 'popular');
       document.getElementById('chipFav').classList.toggle('active', filter === 'fav');
 
+      const titles = { all: 'همه موزیک‌های آرشیو', popular: 'پرطرفدارترین ترک‌ها', fav: 'آهنگ‌های لایک‌شده شما' };
+      document.getElementById('sectionTitle').textContent = titles[filter] || 'موزیک‌ها';
+
       if (filter === 'fav') {
+        document.getElementById('quickGrid').innerHTML = '';
         loadFavorites();
       } else {
         fetchSongs(true);
@@ -601,45 +789,54 @@
     function onSearch() {
       clearTimeout(searchTimer);
       searchTimer = setTimeout(() => {
-        if (currentFilter === 'fav') setFilter('all');
-        else fetchSongs(true);
+        currentFilter = 'all';
+        fetchSongs(true);
       }, 300);
     }
 
+    function renderQuickGrid(topSix) {
+      const grid = document.getElementById('quickGrid');
+      grid.innerHTML = topSix.map((s, idx) => `
+        <div class="quick-card" onclick="playSongByIndex(${idx})">
+          <div class="qc-cover" id="qc_${s.uid}" style="background:${getColor(s.id)}">${escapeHtml(s.title[0] || '🎵')}</div>
+          <div class="qc-title">${escapeHtml(s.title)}</div>
+        </div>
+      `).join('');
+      topSix.forEach(s => fetchCover(s, [`qc_${s.uid}`]));
+    }
+
     function renderSongs() {
-      const listEl = document.getElementById('songList');
+      const list = document.getElementById('trackList');
       if (!currentSongs.length) {
-        listEl.innerHTML = '<div class="empty-msg">موزیکی با این مشخصات یافت نشد 🎵</div>';
+        list.innerHTML = '<div class="empty-box">موزیکی یافت نشد 🎵</div>';
         return;
       }
 
-      listEl.innerHTML = currentSongs.map((s, idx) => {
+      list.innerHTML = currentSongs.map((s, idx) => {
         const isCurrent = currentSong && currentSong.uid === s.uid;
-        const isPlaying = isCurrent && !audio.paused;
         const isFav = favoriteIds.has(s.id);
-        const initial = (s.title && s.title !== 'نامشخص' ? s.title[0] : '🎵');
-        const coverId = `cov_${s.uid}`;
-
         return `
-          <div class="song-card ${isCurrent ? 'playing' : ''}">
-            <div class="cover-thumb" id="${coverId}" style="background:${getGradient(s.id)}" onclick="playSongByIndex(${idx})">
-              ${escapeHtml(initial)}
+          <div class="track-row ${isCurrent ? 'active' : ''}">
+            <div class="track-cover" id="tr_${s.uid}" style="background:${getColor(s.id)}" onclick="playSongByIndex(${idx})">
+              ${escapeHtml(s.title[0] || '🎵')}
             </div>
-            <div class="song-info" onclick="playSongByIndex(${idx})">
-              <div class="song-title">${escapeHtml(s.title)}</div>
-              <div class="song-artist">${escapeHtml(s.performer)}</div>
+            <div class="track-meta" onclick="playSongByIndex(${idx})">
+              <div class="track-title">${escapeHtml(s.title)}</div>
+              <div class="track-artist">${escapeHtml(s.performer)}</div>
             </div>
-            <div class="actions">
-              <button class="icon-btn" onclick="toggleFav(${s.id}, this)" title="علاقه‌مندی">${isFav ? '❤️' : '🤍'}</button>
-              <button class="icon-btn" onclick="sendToChat('${s.uid}')" title="ارسال به پیوی">📥</button>
-              <button class="icon-btn play-btn" onclick="playSongByIndex(${idx})">${isPlaying ? '⏸' : '▶'}</button>
+            <div class="track-actions">
+              <button class="svg-btn ${isFav ? 'liked' : ''}" onclick="toggleFav(${s.id}, this)" title="علاقه‌مندی">
+                ${isFav ? HEART_FILLED : HEART_OUTLINE}
+              </button>
+              <button class="svg-btn" onclick="sendToChat('${s.uid}')" title="ارسال فایل به پیوی">
+                ${SEND_SVG}
+              </button>
             </div>
           </div>
         `;
       }).join('');
 
-      // دریافت تدریجی کاور برای آیتم‌های قابل مشاهده
-      currentSongs.slice(0, 25).forEach(s => fetchCover(s, `cov_${s.uid}`));
+      currentSongs.slice(0, 30).forEach(s => fetchCover(s, [`tr_${s.uid}`]));
     }
 
     async function playSongByIndex(idx) {
@@ -652,31 +849,40 @@
       }
 
       currentSong = song;
-      document.getElementById('pTitle').textContent = song.title;
-      document.getElementById('pArtist').textContent = song.performer;
+      updatePlayerUI(song);
       document.getElementById('miniPlayer').classList.add('visible');
 
-      const mpCover = document.getElementById('mpCoverBox');
-      mpCover.style.background = getGradient(song.id);
-      mpCover.textContent = song.title[0] || '🎵';
-
-      statusBanner.style.display = 'block';
-      statusBanner.textContent = '⏳ در حال اتصال و بافر کردن موزیک...';
-
-      const streamUrl = `/api/stream/${encodeURIComponent(song.uid)}`;
-      audio.src = streamUrl;
+      audio.src = `/api/stream/${encodeURIComponent(song.uid)}`;
       audio.load();
 
       try {
         await audio.play();
-        statusBanner.style.display = 'none';
       } catch (err) {
-        statusBanner.textContent = '⚠️ این ترک استریم مستقیم ندارد؛ روی دکمه 📥 بزنید تا به پیوی ارسال شود.';
+        showToast('⚠️ در حال آماده‌سازی استریم... دوباره تلاش کنید یا به پیوی بفرستید');
       }
 
-      const artUrl = await fetchCover(song, 'mpCoverBox');
+      const artUrl = await fetchCover(song, ['mpArt', 'fpArt']);
       updateMediaSession(song, artUrl);
       renderSongs();
+    }
+
+    function updatePlayerUI(song) {
+      document.getElementById('mpTitle').textContent = song.title;
+      document.getElementById('mpArtist').textContent = song.performer;
+      document.getElementById('fpTitle').textContent = song.title;
+      document.getElementById('fpArtist').textContent = song.performer;
+
+      const bg = getColor(song.id);
+      const mpArt = document.getElementById('mpArt');
+      const fpArt = document.getElementById('fpArt');
+      mpArt.style.background = bg;
+      fpArt.style.background = bg;
+      mpArt.textContent = song.title[0] || '🎵';
+      fpArt.textContent = song.title[0] || '🎵';
+
+      const isFav = favoriteIds.has(song.id);
+      document.getElementById('mpFavBtn').innerHTML = isFav ? HEART_FILLED : HEART_OUTLINE;
+      document.getElementById('fpFavBtn').innerHTML = isFav ? HEART_FILLED : HEART_OUTLINE;
     }
 
     function togglePlay() {
@@ -688,15 +894,13 @@
     function playNext() {
       if (!currentSongs.length) return;
       const idx = currentSongs.findIndex(s => currentSong && s.uid === currentSong.uid);
-      const nextIdx = (idx + 1) % currentSongs.length;
-      playSongByIndex(nextIdx);
+      playSongByIndex((idx + 1) % currentSongs.length);
     }
 
     function playPrev() {
       if (!currentSongs.length) return;
       const idx = currentSongs.findIndex(s => currentSong && s.uid === currentSong.uid);
-      const prevIdx = (idx - 1 + currentSongs.length) % currentSongs.length;
-      playSongByIndex(prevIdx);
+      playSongByIndex((idx - 1 + currentSongs.length) % currentSongs.length);
     }
 
     async function playRandom() {
@@ -710,31 +914,67 @@
       } catch (e) {}
     }
 
+    function ensureUserId() {
+      if (userId) return userId;
+      const entered = prompt('برای ارسال فایل به پیوی، آیدی عددی تلگرام خود را وارد کنید (یا مینی‌اپ را از داخل ربات باز کنید):');
+      if (entered && /^\d+$/.test(entered.trim())) {
+        userId = entered.trim();
+        localStorage.setItem('gm_uid', userId);
+        return userId;
+      }
+      return null;
+    }
+
     async function toggleFav(songId, btn) {
+      const uid = ensureUserId();
+      if (!uid && !initData) return;
       try {
         const res = await fetch(`/api/favorite/${songId}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ init_data: initData, user_id: userId })
+          body: JSON.stringify({ init_data: initData, user_id: uid })
         });
         const data = await res.json();
         if (data.liked) favoriteIds.add(songId);
         else favoriteIds.delete(songId);
-        btn.textContent = data.liked ? '❤️' : '🤍';
+        if (btn) btn.innerHTML = data.liked ? HEART_FILLED : HEART_OUTLINE;
+        if (currentSong && currentSong.id === songId) updatePlayerUI(currentSong);
         if (currentFilter === 'fav' && !data.liked) loadFavorites();
       } catch (e) {}
     }
 
+    function toggleCurrentFav() {
+      if (currentSong) toggleFav(currentSong.id, null);
+    }
+
     async function sendToChat(uid) {
+      const targetUser = ensureUserId();
+      if (!targetUser && !initData) return;
+
+      showToast('⏳ در حال ارسال موزیک به چت شما...');
       try {
         const res = await fetch(`/api/send/${encodeURIComponent(uid)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ init_data: initData, user_id: userId })
+          body: JSON.stringify({ init_data: initData, user_id: targetUser })
         });
-        if (res.ok && tg) tg.showAlert('✅ موزیک به چت شما در ربات ارسال شد!');
-      } catch (e) {}
+        const data = await res.json();
+        if (res.ok) {
+          showToast('✅ موزیک با موفقیت به پیوی شما ارسال شد!');
+        } else {
+          showToast(`❌ ${data.detail || 'خطا در ارسال به پیوی'}`);
+        }
+      } catch (e) {
+        showToast('❌ خطا در ارتباط با سرور');
+      }
     }
+
+    function sendCurrentToChat() {
+      if (currentSong) sendToChat(currentSong.uid);
+    }
+
+    function openFullPlayer() { document.getElementById('fullPlayer').classList.add('open'); }
+    function closeFullPlayer() { document.getElementById('fullPlayer').classList.remove('open'); }
 
     function updateMediaSession(song, artUrl) {
       if ('mediaSession' in navigator) {
@@ -742,7 +982,7 @@
           title: song.title,
           artist: song.performer,
           album: 'GapMusic',
-          artwork: artUrl ? [{ src: artUrl, sizes: '400x400', type: 'image/jpeg' }] : []
+          artwork: artUrl ? [{ src: artUrl, sizes: '500x500', type: 'image/jpeg' }] : []
         });
         navigator.mediaSession.setActionHandler('play', () => audio.play());
         navigator.mediaSession.setActionHandler('pause', () => audio.pause());
@@ -752,26 +992,27 @@
     }
 
     audio.addEventListener('playing', () => {
-      statusBanner.style.display = 'none';
-      playPauseBtn.textContent = '⏸';
-      renderSongs();
+      document.getElementById('mpPlayBtn').innerHTML = PAUSE_SVG;
+      document.getElementById('fpPlayBtn').innerHTML = PAUSE_SVG;
     });
     audio.addEventListener('pause', () => {
-      playPauseBtn.textContent = '▶';
-      renderSongs();
+      document.getElementById('mpPlayBtn').innerHTML = PLAY_SVG;
+      document.getElementById('fpPlayBtn').innerHTML = PLAY_SVG;
     });
     audio.addEventListener('ended', playNext);
 
     audio.addEventListener('timeupdate', () => {
       if (!audio.duration || isNaN(audio.duration)) return;
-      seekBar.value = (audio.currentTime / audio.duration) * 100;
-      document.getElementById('curTime').textContent = formatTime(audio.currentTime);
-      document.getElementById('durTime').textContent = formatTime(audio.duration);
+      const pct = (audio.currentTime / audio.duration) * 100;
+      document.getElementById('mpLineFill').style.width = `${pct}%`;
+      document.getElementById('fpSeek').value = pct;
+      document.getElementById('fpCur').textContent = formatTime(audio.currentTime);
+      document.getElementById('fpDur').textContent = formatTime(audio.duration);
     });
 
     function seekAudio() {
       if (!audio.duration || isNaN(audio.duration)) return;
-      audio.currentTime = (seekBar.value / 100) * audio.duration;
+      audio.currentTime = (document.getElementById('fpSeek').value / 100) * audio.duration;
     }
 
     function formatTime(sec) {
