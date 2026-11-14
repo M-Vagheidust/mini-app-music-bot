@@ -27,18 +27,143 @@ function isAdmin(userId) {
   return ADMIN_IDS.includes(Number(userId));
 }
 
+// دیکشنری هوشمند معادل‌سازی فارسی و انگلیسی برای جستجوی دوزبانه
+const BILINGUAL_ALIASES = [
+  ['tataloo', 'تتلو', 'امیر تتلو'],
+  ['yas', 'یاس'],
+  ['shayea', 'شایع'],
+  ['pishro', 'پیشرو', 'رضا پیشرو'],
+  ['hichkas', 'هیچکس'],
+  ['ho3ein', 'حصین', 'hosein'],
+  ['mehrad hidden', 'مهراد هیدن', 'هیدن', 'hidden'],
+  ['zedbazi', 'زدبازی'],
+  ['sohrab mj', 'سهراب ام جی', 'ام جی'],
+  ['alireza jj', 'علیرضا جی جی', 'جی جی'],
+  ['sijal', 'سیجل'],
+  ['behzad leito', 'بهزاد لیتو', 'لیتو', 'leito'],
+  ['khalse', 'سپهر خلسه', 'خلسه'],
+  ['putak', 'پوتک', 'پوریا پوتک'],
+  ['chvrsi', 'چرسی', 'charsi'],
+  ['hiphopologist', 'هیپهاپولوژیست'],
+  ['vinak', 'ویناک'],
+  ['021kid', '۰۲۱کید', '021'],
+  ['dorcci', 'دورچی', 'dorci'],
+  ['koorosh', 'کوروش'],
+  ['artin', 'ارتین'],
+  ['erfan', 'عرفان', 'پایدار'],
+  ['isogand', 'سوگند', 'sogand'],
+  ['shadmehr', 'شادمهر', 'شادمهر عقیلی'],
+  ['ebi', 'ابی'],
+  ['dariush', 'داریوش'],
+  ['siavash ghomayshi', 'سیاوش قمیشی', 'قمیشی'],
+  ['moein', 'معین'],
+  ['haydeh', 'هایده', 'hayedeh'],
+  ['mahasti', 'مهستی'],
+  ['googoosh', 'گوگوش'],
+  ['chavoshi', 'محسن چاوشی', 'چاوشی'],
+  ['yegane', 'محسن یگانه', 'یگانه'],
+  ['sirvan', 'سیروان', 'سیروان خسروی'],
+  ['xaniar', 'زانیار', 'زانیار خسروی'],
+  ['macan', 'ماکان', 'ماکان بند'],
+  ['ashvan', 'اشوان'],
+  ['aron afshar', 'آرون افشار'],
+  ['garsha rezaei', 'گرشا رضایی'],
+  ['reza bahram', 'رضا بهرام'],
+  ['ali yasini', 'علی یاسینی'],
+  ['haamim', 'حامیم', 'hamim'],
+  ['the weeknd', 'weeknd', 'ویکند', 'د ویکند'],
+  ['drake', 'دریک'],
+  ['eminem', 'امینم'],
+  ['travis scott', 'تراویس اسکات', 'تراویس'],
+  ['kendrick lamar', 'کندریک لامار', 'کندریک'],
+  ['kanye west', 'کانیه وست', 'کانیه'],
+  ['post malone', 'پست مالون'],
+  ['billie eilish', 'بیلی آیلیش'],
+  ['lana del rey', 'لانا دل ری'],
+  ['taylor swift', 'تیلور سوئیفت'],
+  ['adele', 'ادل'],
+  ['rihanna', 'ریحانا'],
+  ['beyonce', 'بیانسه'],
+  ['justin bieber', 'جاستین بیبر'],
+  ['selena gomez', 'سلنا گومز'],
+  ['dua lipa', 'دوا لیپا'],
+  ['shakira', 'شکیرا'],
+  ['ed sheeran', 'اد شیرن'],
+  ['coldplay', 'کلدپلی'],
+  ['imagine dragons', 'ایمجین دراگونز'],
+  ['xxxtenacion', 'xxxtentacion', 'تنتاسیون', 'ایکس'],
+  ['juice wrld', 'جویس ورلد'],
+  ['2pac', 'tupac', 'توپاک'],
+  ['snoop dogg', 'اسنوپ داگ'],
+  ['50 cent', 'فیفتی سنت'],
+  ['central cee', 'سنترال سی'],
+  ['metro boomin', 'مترو بومین'],
+  ['future', 'فیوچر'],
+  ['21 savage', '۲۱ سویج', 'تونی وان سویج'],
+  ['playboi carti', 'پلی بوی کارتی'],
+  ['lil wayne', 'لیل وین'],
+  ['tame impala', 'تیم ایمپالا'],
+  ['arctic monkeys', 'آرکتیک مانکیز'],
+  ['daft punk', 'دفت پانک'],
+  ['alan walker', 'آلن واکر'],
+  ['marshmello', 'مارشملو'],
+  ['remix', 'ریمیکس'],
+  ['slowed', 'اسلود'],
+  ['reverb', 'ریورب']
+];
+
 function normalizeText(text) {
   if (!text) return '';
   let t = String(text).toLowerCase();
   const map = {
     'ي': 'ی', 'ك': 'ک', 'آ': 'ا', 'أ': 'ا', 'إ': 'ا',
     'ۀ': 'ه', 'ة': 'ه', 'ؤ': 'و', 'ئ': 'ی',
+    '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
+    '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
     '\u200c': ' ', '_': ' ', '-': ' ', '.': ' ', '/': ' ', '\\': ' '
   };
   for (const [k, v] of Object.entries(map)) {
     t = t.split(k).join(v);
   }
   return t.replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+}
+
+// تبدیل آوایی فارسی به حروف انگلیسی پایه (فینگیلیش) برای تطبیق دوزبانه
+function persianToLatinPhonetic(text) {
+  const norm = normalizeText(text);
+  if (!/[آ-ی]/.test(norm)) return norm;
+
+  const charMap = {
+    'ا': 'a', 'ب': 'b', 'پ': 'p', 'ت': 't', 'ط': 't', 'ث': 's', 'س': 's', 'ص': 's',
+    'ج': 'j', 'چ': 'ch', 'ح': 'h', 'ه': 'h', 'خ': 'kh', 'د': 'd', 'ذ': 'z', 'ز': 'z',
+    'ض': 'z', 'ظ': 'z', 'ر': 'r', 'ژ': 'zh', 'ش': 'sh', 'ع': 'a', 'غ': 'gh', 'ق': 'gh',
+    'ف': 'f', 'ک': 'k', 'گ': 'g', 'ل': 'l', 'م': 'm', 'ن': 'n', 'و': 'o', 'ی': 'i'
+  };
+
+  let out = '';
+  for (const ch of norm) {
+    out += charMap[ch] !== undefined ? charMap[ch] : ch;
+  }
+  return out.replace(/\s+/g, ' ').trim();
+}
+
+// تولید تمام کلیدواژه‌های معادل فارسی و انگلیسی برای یک عبارت
+function expandBilingualTerms(text) {
+  const norm = normalizeText(text);
+  if (!norm) return '';
+
+  const extras = new Set([norm]);
+  const phonetic = persianToLatinPhonetic(norm);
+  if (phonetic && phonetic !== norm) extras.add(phonetic);
+
+  for (const group of BILINGUAL_ALIASES) {
+    const normGroup = group.map(g => normalizeText(g));
+    if (normGroup.some(alias => alias && (norm.includes(alias) || alias.includes(norm) && norm.length >= 3))) {
+      normGroup.forEach(a => extras.add(a));
+    }
+  }
+
+  return Array.from(extras).join(' ');
 }
 
 function cleanDisplayText(text) {
@@ -80,6 +205,7 @@ function loadSongs() {
       const sourceChat = item.from_chat_id ?? item.chat_id ?? null;
       const messageId = item.message_id ?? null;
       const fileId = String(item.file_id || '').trim();
+      const baseText = `${title} ${performer} ${item.search_text || ''}`;
 
       const song = {
         id,
@@ -90,7 +216,7 @@ function loadSongs() {
         file_unique_id: String(item.file_unique_id || '').trim(),
         title,
         performer,
-        search_text: normalizeText(`${title} ${performer} ${item.search_text || ''}`),
+        search_text: expandBilingualTerms(baseText),
         media_type: String(item.media_type || 'audio').toLowerCase(),
         plays: Math.max(0, parseInt(item.plays, 10) || 0),
         likes: Math.max(0, parseInt(item.likes, 10) || 0),
@@ -215,6 +341,118 @@ function resolveUserId(initData, fallbackId) {
   return null;
 }
 
+// موتور جستجوی هوشمند دوزبانه (فارسی + انگلیسی + فینگیلیش)
+function smartSearchSongs(rawQuery, sourceList) {
+  const normQ = normalizeText(rawQuery);
+  if (!normQ) return sourceList;
+
+  const expandedQ = expandBilingualTerms(normQ);
+  const qTokens = Array.from(new Set(expandedQ.split(' ').filter(t => t.length >= 2)));
+  const rawTokens = normQ.split(' ').filter(Boolean);
+
+  const scored = [];
+  for (const s of sourceList) {
+    const sText = s.search_text || '';
+    if (rawTokens.every(t => sText.includes(t))) {
+      scored.push({ song: s, score: 100 });
+      continue;
+    }
+    const matchedCount = qTokens.filter(t => sText.includes(t)).length;
+    if (matchedCount > 0) {
+      scored.push({ song: s, score: matchedCount * 10 });
+    }
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.map(x => x.song);
+}
+
+// ثبت درخواست موزیک و ارسال فوری به پی‌وی ادمین
+async function submitSongRequest(userId, userName, queryText) {
+  const cleanQ = String(queryText || '').trim();
+  if (!cleanQ) return null;
+
+  const existing = USERS_DB.requests.find(
+    r => String(r.user_id) === String(userId) && r.status === 'pending' && normalizeText(r.query) === normalizeText(cleanQ)
+  );
+  if (existing) return existing;
+
+  const reqObj = {
+    id: USERS_DB.requests.length + 1,
+    user_id: userId,
+    user_name: userName || USERS_DB.users[String(userId)]?.name || 'کاربر',
+    query: cleanQ,
+    expanded_query: expandBilingualTerms(cleanQ),
+    status: 'pending',
+    created_at: Math.floor(Date.now() / 1000)
+  };
+  USERS_DB.requests.push(reqObj);
+  saveUsers();
+
+  const adminMsg =
+    `📩 **درخواست موزیک جدید از مینی‌اپ/ربات**\n\n` +
+    `🎵 آهنگ درخواستی: **${cleanQ}**\n` +
+    `👤 درخواست‌کننده: ${reqObj.user_name} (\`${userId}\`)\n` +
+    `🆔 کد درخواست: #${reqObj.id}\n\n` +
+    `💡 به محض اینکه فایل این آهنگ را در پی‌وی ربات آپلود کنید، به صورت خودکار به کاربر اطلاع داده می‌شود!`;
+
+  for (const adm of ADMIN_IDS) {
+    axios.post(`${TELEGRAM_API}/sendMessage`, {
+      chat_id: adm,
+      text: adminMsg,
+      parse_mode: 'Markdown'
+    }).catch(() => {});
+  }
+
+  return reqObj;
+}
+
+// بررسی و اطلاع‌رسانی خودکار به کاربرانی که این آهنگ را درخواست داده بودند
+async function notifyFulfilledRequests(song) {
+  const pending = USERS_DB.requests.filter(r => r.status === 'pending');
+  if (!pending.length) return;
+
+  const songSearch = song.search_text || expandBilingualTerms(`${song.title} ${song.performer}`);
+  let changed = false;
+
+  for (const req of pending) {
+    const reqExpanded = req.expanded_query || expandBilingualTerms(req.query);
+    const tokens = reqExpanded.split(' ').filter(t => t.length >= 2);
+    if (!tokens.length) continue;
+
+    const isMatch = tokens.some(t => songSearch.includes(t));
+    if (isMatch && req.user_id) {
+      req.status = 'fulfilled';
+      req.fulfilled_song_id = song.id;
+      req.fulfilled_at = Math.floor(Date.now() / 1000);
+      changed = true;
+
+      const notifyText =
+        `🎉 **خبر خوش! موزیک درخواستی شما آماده شد**\n\n` +
+        `🎵 خواننده: **${song.performer}**\n` +
+        `🎧 نام آهنگ: **${song.title}**\n` +
+        `📌 کد موزیک: #${song.id}\n\n` +
+        `👇 همین الان دریافت کنید یا در مینی‌اپ بشنوید:`;
+
+      const buttons = [
+        [{ text: '📥 دریافت فایل موزیک', callback_data: `dl_${song.id}` }]
+      ];
+      if (MINI_APP_URL.startsWith('https://')) {
+        buttons.push([{ text: '🎧 پخش آنلاین در مینی‌اپ', web_app: { url: MINI_APP_URL } }]);
+      }
+
+      axios.post(`${TELEGRAM_API}/sendMessage`, {
+        chat_id: req.user_id,
+        text: notifyText,
+        parse_mode: 'Markdown',
+        reply_markup: { inline_keyboard: buttons }
+      }).catch(() => {});
+    }
+  }
+
+  if (changed) saveUsers();
+}
+
 async function resolvePlayableFile(song) {
   let lastError = 'اطلاعات فایل ناقص است';
 
@@ -279,7 +517,6 @@ async function resolvePlayableFile(song) {
   return { error: lastError };
 }
 
-// تابع کمکی برای ارسال پیام موقت و حذف خودکار پس از ۵ ثانیه
 async function sendAutoDeleteReply(ctx, text, delayMs = 5000) {
   try {
     const sent = await ctx.reply(text);
@@ -351,8 +588,9 @@ app.get('/api/avatar/:userId', async (req, res) => {
   }
 });
 
+// جستجوی دوزبانه هوشمند (فارسی + انگلیسی) در مینی‌اپ
 app.get('/api/songs', (req, res) => {
-  const q = normalizeText(req.query.q || '');
+  const rawQ = String(req.query.q || '').trim();
   const filter = req.query.filter || 'all';
   const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
   const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 60));
@@ -362,11 +600,8 @@ app.get('/api/songs', (req, res) => {
     songs = [...getActiveSongs()].sort((a, b) => (b.plays - a.plays) || (b.likes - a.likes));
   }
 
-  if (q) {
-    const tokens = q.split(' ');
-    const exact = songs.filter(s => tokens.every(t => s.search_text.includes(t)));
-    const partial = songs.filter(s => !exact.includes(s) && tokens.some(t => s.search_text.includes(t)));
-    songs = [...exact, ...partial];
+  if (rawQ) {
+    songs = smartSearchSongs(rawQ, songs);
   }
 
   const total = songs.length;
@@ -380,6 +615,24 @@ app.get('/api/songs', (req, res) => {
   }));
 
   res.json({ total, offset, limit, has_more: offset + items.length < total, items });
+});
+
+// ثبت درخواست آهنگ از داخل مینی‌اپ برای ادمین
+app.post('/api/request', async (req, res) => {
+  const queryText = String(req.body?.query || '').trim();
+  const userId = resolveUserId(req.body?.init_data, req.body?.user_id);
+  const userName = String(req.body?.user_name || '').trim();
+
+  if (!queryText) {
+    return res.status(400).json({ detail: 'لطفاً نام آهنگ را وارد کنید.' });
+  }
+  if (!userId) {
+    return res.status(400).json({ detail: 'برای ثبت درخواست، مینی‌اپ را از داخل تلگرام باز کنید.' });
+  }
+
+  registerUser({ id: userId, first_name: userName });
+  const created = await submitSongRequest(userId, userName, queryText);
+  res.json({ status: 'ok', request: created });
 });
 
 app.delete('/api/admin/song/:id', (req, res) => {
@@ -589,7 +842,7 @@ function buildMainMenu(userId) {
     `🎼 آرشیو موزیک‌های فعال: **${activeCount}** ترک 🎵\n` +
     `❤️ پلی‌لیست شخصی شما: **${favCount}** موزیک\n` +
     `📤 هر موزیکی که بفرستید به صورت خودکار به آرشیو اضافه می‌شود!\n\n` +
-    `💡 نام خواننده یا آهنگ را تایپ کنید یا وارد پلیر آنلاین شوید:`;
+    `💡 نام خواننده یا آهنگ را به فارسی یا انگلیسی تایپ کنید:`;
 
   const rows = [];
   if (MINI_APP_URL.startsWith('https://')) {
@@ -720,11 +973,12 @@ bot.start(async (ctx) => {
 
 bot.command('admin', async (ctx) => {
   if (!isAdmin(ctx.from.id)) return;
+  const pendingCount = USERS_DB.requests.filter(r => r.status === 'pending').length;
   const msg =
     `🛡️ **پنل مدیریت ادمین GapMusic**\n\n` +
     `🎵 کل موزیک‌های فعال: **${getActiveSongs().length}**\n` +
     `👥 تعداد کاربران: **${Object.keys(USERS_DB.users).length}**\n` +
-    `📩 درخواست‌های ثبت‌شده: **${USERS_DB.requests.length}**\n\n` +
+    `📩 درخواست‌های در انتظار: **${pendingCount}** (کل: ${USERS_DB.requests.length})\n\n` +
     `📌 **روش‌های حذف آهنگ:**\n` +
     `1️⃣ داخل مینی‌اپ، روی دکمه 🗑️ کنار هر آهنگ بزنید.\n` +
     `2️⃣ دستور \`/del کد_آهنگ\` را بفرستید (مثلاً: \`/del 125\`).`;
@@ -748,11 +1002,12 @@ bot.command('del', async (ctx) => {
 
 bot.action('admin_panel', async (ctx) => {
   if (!isAdmin(ctx.from.id)) return ctx.answerCbQuery('دسترسی غیرمجاز', { show_alert: true });
+  const pendingCount = USERS_DB.requests.filter(r => r.status === 'pending').length;
   const msg =
     `🛡️ **پنل مدیریت ادمین GapMusic**\n\n` +
     `🎵 کل موزیک‌های فعال: **${getActiveSongs().length}**\n` +
     `👥 تعداد کاربران: **${Object.keys(USERS_DB.users).length}**\n` +
-    `📩 درخواست‌های ثبت‌شده: **${USERS_DB.requests.length}**\n\n` +
+    `📩 درخواست‌های در انتظار: **${pendingCount}**\n\n` +
     `💡 برای حذف سریع: دستور \`/del کد_آهنگ\` را بفرستید یا در مینی‌اپ آیکون 🗑️ را بزنید.`;
 
   await ctx.editMessageText(msg, {
@@ -896,7 +1151,7 @@ bot.action(/^page_(\d+)$/, async (ctx) => {
   await ctx.answerCbQuery();
 });
 
-// دریافت فایل صوتی از هر کاربر در پی‌وی ربات + پیام تایید طبق تصویر + حذف خودکار بعد از ۵ ثانیه
+// دریافت فایل صوتی + اطلاع‌رسانی خودکار به درخواست‌کنندگان قبلی
 bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
   const msg = ctx.message || ctx.channelPost;
   if (!msg) return next();
@@ -909,7 +1164,7 @@ bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
   const rawTitle = audio.title || (audio.file_name ? path.parse(audio.file_name).name : 'نامشخص');
   const title = cleanDisplayText(rawTitle);
   const performer = cleanDisplayText(audio.performer || 'نامشخص');
-  const normSearch = normalizeText(`${title} ${performer}`);
+  const normSearch = expandBilingualTerms(`${title} ${performer}`);
 
   const exists = ALL_SONGS.find(s =>
     (audio.file_unique_id && s.file_unique_id && s.file_unique_id === audio.file_unique_id) ||
@@ -923,6 +1178,8 @@ bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
     exists.message_id = msg.message_id;
     exists.available = true;
     saveSongs();
+
+    notifyFulfilledRequests(exists).catch(() => {});
 
     if (!ctx.channelPost) {
       const dupMsg =
@@ -955,6 +1212,9 @@ bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
   ALL_SONGS.push(newSong);
   saveSongs();
 
+  // اطلاع‌رسانی خودکار در پی‌وی به کاربرانی که این آهنگ را درخواست داده بودند
+  notifyFulfilledRequests(newSong).catch(() => {});
+
   if (!ctx.channelPost) {
     const confirmMsg =
       `✅ موزیک با موفقیت در دیتابیس ذخیره شد!\n\n` +
@@ -980,34 +1240,19 @@ bot.on('text', async (ctx) => {
   const session = userSessions.get(ctx.from.id);
   if (ctx.chat.type === 'private' && session?.awaitingRequest) {
     userSessions.delete(ctx.from.id);
-    USERS_DB.requests.push({
-      id: USERS_DB.requests.length + 1,
-      user_id: ctx.from.id,
-      user_name: ctx.from.first_name || '',
-      query,
-      status: 'pending',
-      created_at: Math.floor(Date.now() / 1000)
-    });
-    saveUsers();
-    await ctx.reply(`✅ درخواست شما برای «${query}» ثبت شد و به زودی به آرشیو اضافه می‌شود.`);
-    for (const adm of ADMIN_IDS) {
-      ctx.telegram.sendMessage(adm, `📩 درخواست موزیک جدید از ${ctx.from.first_name}:\n🎵 ${query}`).catch(() => {});
-    }
+    await submitSongRequest(ctx.from.id, ctx.from.first_name, query);
+    await ctx.reply(`✅ درخواست شما برای «${query}» ثبت شد و به ادمین ارسال گردید.\nبه محض آپلود، در پی‌وی به شما خبر می‌دهم!`);
     return;
   }
 
-  const normQ = normalizeText(query);
-  const tokens = normQ.split(' ');
-  const active = getActiveSongs();
-  const exact = active.filter(s => tokens.every(t => s.search_text.includes(t)));
-  const partial = active.filter(s => !exact.includes(s) && tokens.some(t => s.search_text.includes(t)));
-  const results = [...exact, ...partial];
+  const results = smartSearchSongs(query, getActiveSongs());
 
   if (!results.length) {
+    userSessions.set(ctx.from.id, { pendingQuery: query });
     return ctx.reply(
       `❌ آهنگی برای «${query}» یافت نشد.`,
       Markup.inlineKeyboard([
-        [Markup.button.callback('📩 درخواست این موزیک', 'request_song')],
+        [Markup.button.callback('📩 ارسال درخواست برای ادمین', 'quick_request_pending')],
         [Markup.button.callback('🎲 موزیک شانسی', 'random_song')]
       ])
     );
@@ -1020,14 +1265,22 @@ bot.on('text', async (ctx) => {
   );
 });
 
+bot.action('quick_request_pending', async (ctx) => {
+  const session = userSessions.get(ctx.from.id);
+  const q = session?.pendingQuery;
+  if (!q) return ctx.answerCbQuery('لطفاً دوباره نام آهنگ را تایپ کنید.', { show_alert: true });
+  userSessions.delete(ctx.from.id);
+  await submitSongRequest(ctx.from.id, ctx.from.first_name, q);
+  await ctx.editMessageText(`✅ درخواست شما برای «${q}» به ادمین ارسال شد.\nبه محض آپلود شدن آهنگ، در پی‌وی به شما خبر می‌دهم!`).catch(() => {});
+  await ctx.answerCbQuery('✅ درخواست ثبت شد!');
+});
+
 bot.on('inline_query', async (ctx) => {
   const rawQ = (ctx.inlineQuery.query || '').trim();
   let songs = getActiveSongs().filter(s => s.media_type === 'audio' && s.file_id);
 
   if (rawQ && rawQ !== '.') {
-    const q = normalizeText(rawQ);
-    const tokens = q.split(' ');
-    songs = songs.filter(s => tokens.some(t => s.search_text.includes(t)));
+    songs = smartSearchSongs(rawQ, songs);
   } else {
     songs = [...songs].reverse();
   }
