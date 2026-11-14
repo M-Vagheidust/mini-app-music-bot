@@ -14,13 +14,13 @@
   <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" />
   <style>
     :root {
-      --bg: #050507;
-      --surface: rgba(20, 20, 26, 0.85);
+      --bg: #070b12;
+      --surface: rgba(18, 23, 34, 0.85);
       --crimson: #ff1e42;
       --crimson-glow: rgba(255, 30, 66, 0.42);
       --crimson-soft: rgba(255, 30, 66, 0.14);
       --text: #ffffff;
-      --subtext: #9ca3af;
+      --subtext: #94a3b8;
       --border: rgba(255, 255, 255, 0.08);
       --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
     }
@@ -41,7 +41,7 @@
 
     body {
       padding-bottom: 145px;
-      background: radial-gradient(circle at 20% 0%, rgba(255, 30, 66, 0.22) 0%, var(--bg) 42%);
+      background: radial-gradient(circle at 20% 0%, rgba(255, 30, 66, 0.18) 0%, #0a0f18 45%, #06090f 100%);
       background-color: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -57,13 +57,13 @@
       -webkit-user-select: text !important;
     }
 
-    /* Top Header with Brand & User Profile */
+    /* Header */
     .app-header {
       padding: 12px 14px 10px;
       position: sticky;
       top: 0;
       z-index: 25;
-      background: rgba(5, 5, 7, 0.88);
+      background: rgba(7, 11, 18, 0.88);
       backdrop-filter: blur(22px);
       -webkit-backdrop-filter: blur(22px);
       border-bottom: 1px solid var(--border);
@@ -103,25 +103,11 @@
     .wave-icon span:nth-child(4) { height: 14px; }
     .wave-icon span:nth-child(5) { height: 9px; }
 
-    .brand-titles {
-      display: flex;
-      flex-direction: column;
-      line-height: 1.1;
-    }
-    .brand-name {
-      font-size: 16px;
-      font-weight: 900;
-      letter-spacing: 0.3px;
-      white-space: nowrap;
-    }
+    .brand-titles { display: flex; flex-direction: column; line-height: 1.1; }
+    .brand-name { font-size: 16px; font-weight: 900; letter-spacing: 0.3px; white-space: nowrap; }
     .brand-name b { color: var(--crimson); }
-    .brand-sub {
-      font-size: 9px;
-      color: var(--subtext);
-      letter-spacing: 1px;
-    }
+    .brand-sub { font-size: 9px; color: var(--subtext); letter-spacing: 1px; }
 
-    /* Telegram User Profile Pill (Top Left/Right) */
     .user-pill {
       display: flex;
       align-items: center;
@@ -158,22 +144,13 @@
       font-weight: 800;
       color: #fff;
     }
-    .user-avatar-circle img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+    .user-avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
 
-    /* Search Bar inside Header */
-    .search-bar-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    .search-bar-row { display: flex; align-items: center; gap: 8px; }
 
     .sp-search-bar {
       flex: 1;
-      background: #121217;
+      background: rgba(17, 23, 35, 0.95);
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 500px;
       display: flex;
@@ -216,14 +193,14 @@
       flex-shrink: 0;
     }
 
-    /* Featured Hero Banner (Inspired by Concept) */
+    /* Hero Banner */
     .hero-banner {
       margin: 12px 14px;
       border-radius: 20px;
       padding: 16px 18px;
-      background: linear-gradient(125deg, #1b0b10 0%, #3d0916 55%, #8a0e26 100%);
-      border: 1px solid rgba(255, 30, 66, 0.35);
-      box-shadow: 0 14px 35px rgba(0, 0, 0, 0.65);
+      background: linear-gradient(125deg, #161b29 0%, #360c19 55%, #7a0e25 100%);
+      border: 1px solid rgba(255, 30, 66, 0.32);
+      box-shadow: 0 14px 35px rgba(0, 0, 0, 0.55);
       position: relative;
       overflow: hidden;
       display: flex;
@@ -232,24 +209,7 @@
       gap: 12px;
     }
 
-    .hero-banner::after {
-      content: '';
-      position: absolute;
-      right: -30px;
-      top: -30px;
-      width: 150px;
-      height: 150px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(255, 30, 66, 0.45), transparent 70%);
-      pointer-events: none;
-    }
-
-    .hero-content {
-      z-index: 2;
-      flex: 1;
-      min-width: 0;
-    }
-
+    .hero-content { z-index: 2; flex: 1; min-width: 0; }
     .hero-tag {
       display: inline-flex;
       align-items: center;
@@ -262,36 +222,10 @@
       border-radius: 500px;
       margin-bottom: 6px;
     }
-    .hero-tag i {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--crimson);
-      box-shadow: 0 0 8px var(--crimson);
-    }
-
-    .hero-title {
-      font-size: 18px;
-      font-weight: 900;
-      margin: 0 0 4px 0;
-      line-height: 1.25;
-    }
+    .hero-tag i { width: 6px; height: 6px; border-radius: 50%; background: var(--crimson); box-shadow: 0 0 8px var(--crimson); }
+    .hero-title { font-size: 18px; font-weight: 900; margin: 0 0 4px 0; line-height: 1.25; }
     .hero-title span { color: var(--crimson); }
-
-    .hero-desc {
-      font-size: 11px;
-      color: #d1d5db;
-      margin-bottom: 12px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .hero-btns {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    .hero-desc { font-size: 11px; color: #d1d5db; margin-bottom: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     .play-now-pill {
       background: #ffffff;
@@ -308,11 +242,9 @@
       white-space: nowrap;
       cursor: pointer;
       box-shadow: 0 4px 15px rgba(255, 255, 255, 0.25);
-      transition: transform 0.2s var(--ease-spring);
     }
-    .play-now-pill:active { transform: scale(0.94); }
 
-    /* 4 Glass Quick Category Boxes (From Concept Image) */
+    /* Quick Filter Boxes */
     .quick-boxes-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -334,34 +266,20 @@
       transition: all 0.25s var(--ease-spring);
     }
     .quick-action-box.active {
-      background: linear-gradient(180deg, rgba(255, 30, 66, 0.25), rgba(20, 20, 26, 0.95));
+      background: linear-gradient(180deg, rgba(255, 30, 66, 0.24), rgba(18, 23, 34, 0.95));
       border-color: var(--crimson);
-      box-shadow: 0 6px 18px rgba(255, 30, 66, 0.22);
+      box-shadow: 0 6px 18px rgba(255, 30, 66, 0.2);
     }
-    .quick-action-box:active { transform: scale(0.93); }
-
-    .qab-icon {
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+    .qab-icon { color: #fff; display: flex; align-items: center; justify-content: center; }
     .quick-action-box.active .qab-icon { color: var(--crimson); }
-
-    .qab-label {
-      font-size: 10.5px;
-      font-weight: 700;
-      color: #e5e7eb;
-      white-space: nowrap;
-      text-align: center;
-    }
+    .qab-label { font-size: 10.5px; font-weight: 700; color: #e5e7eb; white-space: nowrap; text-align: center; }
 
     /* Admin Bar */
     .admin-bar {
       margin: 4px 14px 10px;
       padding: 10px 14px;
       border-radius: 14px;
-      background: linear-gradient(135deg, rgba(255, 30, 66, 0.18), rgba(20, 20, 28, 0.92));
+      background: linear-gradient(135deg, rgba(255, 30, 66, 0.18), rgba(18, 23, 34, 0.92));
       border: 1px solid rgba(255, 30, 66, 0.5);
       display: none;
       flex-direction: column;
@@ -380,12 +298,7 @@
     .section-heading span { font-size: 11.5px; color: var(--crimson); font-weight: 700; }
 
     /* Track Rows */
-    .track-list {
-      padding: 0 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
+    .track-list { padding: 0 12px; display: flex; flex-direction: column; gap: 6px; }
 
     .track-row {
       display: flex;
@@ -393,13 +306,12 @@
       gap: 10px;
       padding: 8px 10px;
       border-radius: 14px;
-      background: rgba(255, 255, 255, 0.025);
+      background: rgba(255, 255, 255, 0.03);
       border: 1px solid transparent;
       transition: transform 0.25s var(--ease-spring), background 0.25s ease;
-      animation: fadeSlideUp 0.35s var(--ease-spring) both;
     }
     .track-row.active {
-      background: linear-gradient(90deg, rgba(255, 30, 66, 0.18), rgba(18, 18, 24, 0.92));
+      background: linear-gradient(90deg, rgba(255, 30, 66, 0.18), rgba(18, 23, 34, 0.92));
       border-color: rgba(255, 30, 66, 0.45);
     }
 
@@ -419,37 +331,12 @@
     }
     .track-cover img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
 
-    .track-meta {
-      flex: 1;
-      min-width: 0;
-      cursor: pointer;
-    }
-
-    .track-title {
-      font-size: 13.5px;
-      font-weight: 700;
-      color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+    .track-meta { flex: 1; min-width: 0; cursor: pointer; }
+    .track-title { font-size: 13.5px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .track-row.active .track-title { color: var(--crimson); }
+    .track-artist { font-size: 11.5px; color: var(--subtext); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    .track-artist {
-      font-size: 11.5px;
-      color: var(--subtext);
-      margin-top: 2px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .track-actions {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-      flex-shrink: 0;
-    }
+    .track-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
 
     .svg-btn {
       width: 34px;
@@ -462,25 +349,12 @@
       justify-content: center;
       border-radius: 50%;
       cursor: pointer;
-      transition: transform 0.2s var(--ease-spring), color 0.2s ease;
     }
-    .svg-btn:active { background: rgba(255, 255, 255, 0.1); transform: scale(0.86); }
     .svg-btn.liked { color: var(--crimson); }
     .svg-btn.del-btn { color: #ff4d6d; background: rgba(255, 30, 66, 0.14); }
 
-    .eq-bars {
-      display: inline-flex;
-      align-items: flex-end;
-      gap: 2px;
-      height: 13px;
-      margin-left: 6px;
-    }
-    .eq-bars span {
-      width: 2.5px;
-      background: var(--crimson);
-      border-radius: 2px;
-      animation: eqBounce 0.7s ease-in-out infinite alternate;
-    }
+    .eq-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 13px; margin-left: 6px; }
+    .eq-bars span { width: 2.5px; background: var(--crimson); border-radius: 2px; animation: eqBounce 0.7s ease-in-out infinite alternate; }
     .eq-bars span:nth-child(2) { animation-delay: 0.2s; }
     .eq-bars span:nth-child(3) { animation-delay: 0.4s; }
     @keyframes eqBounce { 0% { height: 4px; } 100% { height: 13px; } }
@@ -501,24 +375,56 @@
       justify-content: center;
     }
 
-    /* Floating Crimson Glow Mini Player */
+    /* Request Box when no song found */
+    .not-found-card {
+      margin: 18px 4px;
+      padding: 26px 18px;
+      border-radius: 20px;
+      background: rgba(18, 23, 34, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .not-found-title { font-size: 14.5px; font-weight: 800; color: #fff; }
+    .not-found-sub { font-size: 12px; color: var(--subtext); line-height: 1.6; max-width: 280px; }
+    .request-admin-btn {
+      background: #ffffff;
+      color: #09090b;
+      border: none;
+      border-radius: 500px;
+      padding: 11px 22px;
+      font-size: 13px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(255, 255, 255, 0.2);
+      transition: transform 0.2s var(--ease-spring);
+    }
+    .request-admin-btn:active { transform: scale(0.95); }
+
+    /* Mini Player */
     .sp-mini-player {
       position: fixed;
       bottom: 66px;
       left: 10px;
       right: 10px;
       height: 60px;
-      background: rgba(18, 12, 16, 0.94);
+      background: rgba(15, 20, 30, 0.94);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(255, 30, 66, 0.45);
+      border: 1px solid rgba(255, 30, 66, 0.42);
       border-radius: 16px;
       padding: 6px 10px;
       display: flex;
       align-items: center;
       gap: 10px;
       z-index: 40;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 18px rgba(255, 30, 66, 0.18);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
       overflow: hidden;
       transform: translateY(150%);
       opacity: 0;
@@ -526,15 +432,7 @@
     }
     .sp-mini-player.visible { transform: translateY(0); opacity: 1; }
 
-    .mp-progress-line {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 2.5px;
-      background: rgba(255, 255, 255, 0.1);
-      direction: ltr;
-    }
+    .mp-progress-line { position: absolute; bottom: 0; left: 0; right: 0; height: 2.5px; background: rgba(255, 255, 255, 0.1); direction: ltr; }
     .mp-progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--crimson), #ff6b81); }
 
     .mp-art {
@@ -551,19 +449,18 @@
       cursor: pointer;
     }
     .mp-art img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
-
     .mp-info { flex: 1; min-width: 0; cursor: pointer; }
     .mp-title { font-size: 13px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .mp-artist { font-size: 11px; color: var(--crimson); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    /* 5-Item Bottom Nav with Center Crimson Pulse Button */
+    /* Bottom Nav */
     .bottom-nav {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
       height: 60px;
-      background: rgba(5, 5, 7, 0.97);
+      background: rgba(7, 11, 18, 0.97);
       backdrop-filter: blur(20px);
       display: flex;
       justify-content: space-around;
@@ -585,7 +482,6 @@
       font-weight: 600;
       cursor: pointer;
       height: 100%;
-      white-space: nowrap;
     }
     .nav-item.active { color: var(--crimson); font-weight: 800; }
 
@@ -593,46 +489,77 @@
       width: 46px;
       height: 46px;
       border-radius: 50%;
-      background: linear-gradient(135deg, var(--crimson), #b80d29);
-      color: #fff;
+      background: #ffffff;
+      color: #070b12;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 20px var(--crimson-glow);
+      box-shadow: 0 0 18px rgba(255, 255, 255, 0.28);
       margin-top: -10px;
-      border: 2px solid #050507;
+      border: 2px solid #070b12;
       cursor: pointer;
       flex-shrink: 0;
-      transition: transform 0.2s var(--ease-spring);
     }
-    .nav-center-btn:active { transform: scale(0.9); }
 
-    /* Full-Screen Player */
+    /* ===================================================================
+       FULL PLAYER (Minimalist Dark Navy-Crimson + Pill Waveform + White/Black Controls)
+       =================================================================== */
     .full-player {
       position: fixed;
       inset: 0;
       z-index: 100;
-      background: radial-gradient(circle at 50% 25%, rgba(255, 30, 66, 0.3) 0%, #050507 70%);
-      background-color: #050507;
+      background: radial-gradient(circle at 25% 15%, rgba(255, 30, 66, 0.22) 0%, #0b111d 50%, #060910 100%);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 20px 24px 36px;
+      padding: 18px 22px 34px;
       transform: translateY(100%);
       transition: transform 0.45s var(--ease-spring);
     }
     .full-player.open { transform: translateY(0); }
 
-    .fp-top { display: flex; justify-content: space-between; align-items: center; }
-    .fp-top span { font-size: 11.5px; font-weight: 800; letter-spacing: 0.6px; color: var(--crimson); }
+    .fp-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .fp-top-circle-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .fp-header-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .fp-header-sub { font-size: 9.5px; font-weight: 700; letter-spacing: 1.4px; color: var(--crimson); }
+    .fp-header-brand { font-size: 12px; font-weight: 900; letter-spacing: 1px; color: #ffffff; }
+
+    /* Clean Rounded-Square Artwork */
+    .fp-artwork-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 8px auto;
+    }
 
     .fp-artwork {
-      width: min(290px, 74vw);
-      height: min(290px, 74vw);
-      margin: 10px auto;
-      border-radius: 22px;
-      box-shadow: 0 22px 55px rgba(255, 30, 66, 0.28);
-      border: 1px solid rgba(255, 30, 66, 0.35);
+      width: min(275px, 72vw);
+      height: min(275px, 72vw);
+      border-radius: 26px;
+      box-shadow: 0 22px 50px rgba(0, 0, 0, 0.65), 0 0 28px rgba(255, 30, 66, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.14);
       position: relative;
       overflow: hidden;
       display: flex;
@@ -645,36 +572,111 @@
     .fp-artwork.playing-scale { transform: scale(1.03); }
     .fp-artwork img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
 
-    .fp-details { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .fp-details {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
     .fp-titles { flex: 1; min-width: 0; }
-    .fp-title { font-size: 20px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fp-title { font-size: 20px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ffffff; }
     .fp-artist { font-size: 13.5px; color: var(--subtext); margin-top: 3px; }
 
-    .fp-seek-wrap { margin: 14px 0; direction: ltr; }
-    .fp-seek-wrap input[type="range"] { width: 100%; accent-color: var(--crimson); height: 5px; cursor: pointer; }
-    .fp-times { display: flex; justify-content: space-between; font-size: 11px; color: var(--subtext); margin-top: 4px; }
+    /* Interactive Rounded-Pill Audio Waveform Timeline */
+    .fp-wave-section {
+      margin: 6px 0 18px;
+      direction: ltr;
+    }
 
-    .fp-controls { display: flex; justify-content: space-between; align-items: center; direction: ltr; }
-    .fp-play-circle {
-      width: 64px;
-      height: 64px;
+    .waveform-container {
+      width: 100%;
+      height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 3px;
+      cursor: pointer;
+      touch-action: none;
+      padding: 4px 0;
+    }
+
+    .wave-bar {
+      flex: 1;
+      min-width: 2.5px;
+      max-width: 4.5px;
+      height: 22%;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.2);
+      transition: background-color 0.15s ease, height 0.08s linear;
+    }
+
+    .wave-bar.played {
+      background: var(--crimson);
+      box-shadow: 0 0 8px rgba(255, 30, 66, 0.45);
+    }
+
+    .wave-bar.current-head {
+      background: #ffffff;
+      box-shadow: 0 0 10px #ffffff;
+    }
+
+    .fp-times {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--subtext);
+      margin-top: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Monochrome White & Black Circular Controls */
+    .fp-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      direction: ltr;
+      padding: 0 4px;
+    }
+
+    .mono-ctrl-btn {
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
-      background: linear-gradient(135deg, var(--crimson), #c8102e);
+      background: rgba(15, 18, 26, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.14);
       color: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s var(--ease-spring), background 0.2s ease;
+    }
+    .mono-ctrl-btn:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.12); }
+
+    .fp-play-circle {
+      width: 66px;
+      height: 66px;
+      border-radius: 50%;
+      background: #ffffff;
+      color: #090b10;
       border: none;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      box-shadow: 0 8px 28px var(--crimson-glow);
+      box-shadow: 0 0 28px rgba(255, 255, 255, 0.32);
+      transition: transform 0.2s var(--ease-spring);
     }
+    .fp-play-circle:active { transform: scale(0.93); }
 
     .toast {
       position: fixed;
       top: 16px;
       left: 50%;
       transform: translateX(-50%) translateY(-90px);
-      background: #18181f;
+      background: #121826;
       border: 1px solid var(--crimson);
       color: #ffffff;
       padding: 10px 16px;
@@ -687,8 +689,6 @@
       text-align: center;
     }
     .toast.show { transform: translateX(-50%) translateY(0); }
-
-    @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .empty-box { text-align: center; color: var(--subtext); padding: 40px 20px; font-size: 13.5px; }
   </style>
 </head>
@@ -696,7 +696,7 @@
 
   <div id="toast" class="toast"></div>
 
-  <!-- Header with Brand & Telegram User Profile -->
+  <!-- Header -->
   <header class="app-header">
     <div class="header-top">
       <div class="brand-box">
@@ -707,7 +707,6 @@
         </div>
       </div>
 
-      <!-- Telegram Profile Avatar + Account Name -->
       <div class="user-pill">
         <span class="user-name-label" id="tgUserName">کاربر تلگرام</span>
         <div class="user-avatar-circle" id="tgUserAvatar">G</div>
@@ -716,29 +715,27 @@
 
     <div class="search-bar-row">
       <div class="sp-search-bar">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="#9ca3af"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-        <input type="text" id="searchInput" placeholder="جستجوی آهنگ، خواننده یا پلی‌لیست..." oninput="onSearch()" autocomplete="off" inputmode="search" />
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="#94a3b8"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input type="text" id="searchInput" placeholder="جستجوی فارسی یا انگلیسی آهنگ، خواننده..." oninput="onSearch()" autocomplete="off" inputmode="search" />
       </div>
       <button class="admin-mini-btn" id="adminToggleBtn" onclick="toggleAdminMode()">🛡️ ادمین</button>
     </div>
   </header>
 
-  <!-- Featured Hero Card -->
+  <!-- Hero Banner -->
   <section class="hero-banner">
     <div class="hero-content">
       <div class="hero-tag"><i></i> FEATURED MIX • آرشیو آنلاین</div>
       <h2 class="hero-title">Late Night <span>Vibes</span></h2>
       <div class="hero-desc">پخش آنلاین و دانلود مستقیم هزاران ترک منتخب</div>
-      <div class="hero-btns">
-        <button class="play-now-pill" onclick="playRandom()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-          پخش شانسی
-        </button>
-      </div>
+      <button class="play-now-pill" onclick="playRandom()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        پخش شانسی
+      </button>
     </div>
   </section>
 
-  <!-- 4 Glass Category Cards -->
+  <!-- Quick Category Boxes -->
   <div class="quick-boxes-grid">
     <div class="quick-action-box active" id="boxAll" onclick="setFilter('all')">
       <div class="qab-icon">
@@ -766,7 +763,7 @@
     </div>
   </div>
 
-  <!-- Admin Dashboard Bar -->
+  <!-- Admin Bar -->
   <div class="admin-bar" id="adminBar">
     <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:800;">
       <span>🛡️ پنل مدیریت فعال شد</span>
@@ -799,7 +796,7 @@
     <div class="mp-progress-line"><div class="mp-progress-fill" id="mpLineFill"></div></div>
   </div>
 
-  <!-- 5-Button Bottom Navigation Bar -->
+  <!-- Bottom Navigation -->
   <nav class="bottom-nav">
     <div class="nav-item active" id="navHome" onclick="switchNav('home')">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
@@ -810,7 +807,7 @@
       <span>جستجو</span>
     </div>
     <div class="nav-center-btn" onclick="openFullPlayer()" title="پخش‌کننده">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v18M8 7v10M16 7v10M4 10v4M20 10v4" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v18M8 7v10M16 7v10M4 10v4M20 10v4" stroke="#070b12" stroke-width="2.4" stroke-linecap="round"/></svg>
     </div>
     <div class="nav-item" id="navLib" onclick="switchNav('lib')">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
@@ -822,19 +819,24 @@
     </div>
   </nav>
 
-  <!-- Full-Screen Now Playing Sheet -->
+  <!-- Full-Screen Minimalist Waveform Player -->
   <div class="full-player" id="fullPlayer">
     <div class="fp-top">
-      <button class="svg-btn" style="color:#fff;" onclick="closeFullPlayer()">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+      <button class="fp-top-circle-btn" onclick="closeFullPlayer()" title="بستن">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
       </button>
-      <span>NOW PLAYING • GAPMUSIC</span>
-      <button class="svg-btn" style="color:#fff;" onclick="sendCurrentToChat()" title="ارسال فایل به پیوی">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+      <div class="fp-header-center">
+        <span class="fp-header-sub">NOW PLAYING</span>
+        <span class="fp-header-brand">• GAPMUSIC •</span>
+      </div>
+      <button class="fp-top-circle-btn" onclick="sendCurrentToChat()" title="ارسال فایل به پیوی">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
       </button>
     </div>
 
-    <div class="fp-artwork" id="fpArt">🎵</div>
+    <div class="fp-artwork-wrap">
+      <div class="fp-artwork" id="fpArt">🎵</div>
+    </div>
 
     <div>
       <div class="fp-details">
@@ -847,59 +849,61 @@
         </button>
       </div>
 
-      <div class="fp-seek-wrap">
-        <input type="range" id="fpSeek" value="0" min="0" max="100" oninput="seekAudio()" />
+      <!-- Rounded-Pill Audio Waveform Timeline -->
+      <div class="fp-wave-section">
+        <div class="waveform-container" id="waveformContainer"></div>
         <div class="fp-times">
           <span id="fpCur">0:00</span>
           <span id="fpDur">0:00</span>
         </div>
       </div>
 
+      <!-- Monochrome White & Black Controls -->
       <div class="fp-controls">
-        <button class="svg-btn" style="color:#ff1e42;" onclick="playRandom()" title="شانسی">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+        <button class="mono-ctrl-btn" onclick="playRandom()" title="پخش شانسی">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
         </button>
-        <button class="svg-btn" style="color:#fff;" onclick="playPrev()">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+        <button class="mono-ctrl-btn" onclick="playPrev()" title="قبلی">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
         </button>
         <button class="fp-play-circle" id="fpPlayBtn" onclick="togglePlay()">
           <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
         </button>
-        <button class="svg-btn" style="color:#fff;" onclick="playNext()">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        <button class="mono-ctrl-btn" onclick="playNext()" title="بعدی">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
         </button>
-        <button class="svg-btn" style="color:#fff;" onclick="sendCurrentToChat()" title="ارسال به پیوی">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        <button class="mono-ctrl-btn" onclick="sendCurrentToChat()" title="ارسال فایل به پیوی">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
         </button>
       </div>
     </div>
   </div>
 
-  <audio id="audioPlayer" playsinline preload="auto"></audio>
+  <audio id="audioPlayer" crossorigin="anonymous" playsinline preload="auto"></audio>
 
   <script>
     const tg = window.Telegram?.WebApp;
     if (tg) {
       tg.ready();
       tg.expand();
-      tg.setHeaderColor?.('#050507');
-      tg.setBackgroundColor?.('#050507');
+      tg.setHeaderColor?.('#070b12');
+      tg.setBackgroundColor?.('#070b12');
     }
 
     const initData = tg?.initData || '';
     const tgUser = tg?.initDataUnsafe?.user || null;
     let userId = tgUser?.id || localStorage.getItem('gm_uid') || '';
     if (userId) localStorage.setItem('gm_uid', userId);
+    let userFullName = '';
 
-    // تنظیم نام و عکس پروفایل واقعی کاربر تلگرام در هدر
     function initUserProfile() {
       const nameEl = document.getElementById('tgUserName');
       const avatarEl = document.getElementById('tgUserAvatar');
 
       if (tgUser) {
-        const fullName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'کاربر تلگرام';
-        nameEl.textContent = fullName;
-        avatarEl.textContent = fullName[0] || 'U';
+        userFullName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'کاربر تلگرام';
+        nameEl.textContent = userFullName;
+        avatarEl.textContent = userFullName[0] || 'U';
 
         if (tgUser.photo_url) {
           avatarEl.innerHTML = `<img src="${tgUser.photo_url}" alt="avatar" />`;
@@ -916,8 +920,8 @@
     }
     initUserProfile();
 
-    const PLAY_SVG = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
-    const PAUSE_SVG = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+    const PLAY_SVG = '<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+    const PAUSE_SVG = '<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
     const HEART_OUTLINE = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
     const HEART_FILLED = '<svg width="19" height="19" viewBox="0 0 24 24" fill="#ff1e42"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
     const SEND_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
@@ -947,6 +951,125 @@
       'linear-gradient(135deg, #f43f5e, #881337)'
     ];
 
+    // ===================================================================
+    // WAVEFORM GENERATOR & LIVE AUDIO ANALYSER
+    // ===================================================================
+    const WAVE_BARS_COUNT = 48;
+    let baseHeights = [];
+    let waveBarsEls = [];
+    let audioCtx = null;
+    let analyser = null;
+    let dataArray = null;
+    let rafId = null;
+
+    function initWaveformBars(seed = 1) {
+      const container = document.getElementById('waveformContainer');
+      container.innerHTML = '';
+      baseHeights = [];
+      waveBarsEls = [];
+
+      for (let i = 0; i < WAVE_BARS_COUNT; i++) {
+        // الگوی طبیعی موج صدا (شبیه SoundCloud)
+        const env = Math.sin((i / WAVE_BARS_COUNT) * Math.PI);
+        const wave = Math.abs(Math.sin(i * 0.42 + seed) * 0.55 + Math.cos(i * 0.91 - seed) * 0.45);
+        const h = Math.max(18, Math.min(95, Math.round((0.25 + env * 0.75) * wave * 100)));
+        baseHeights.push(h);
+
+        const bar = document.createElement('div');
+        bar.className = 'wave-bar';
+        bar.style.height = `${h}%`;
+        container.appendChild(bar);
+        waveBarsEls.push(bar);
+      }
+    }
+    initWaveformBars(3);
+
+    function setupAudioAnalyser() {
+      if (audioCtx) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+        const source = audioCtx.createMediaElementSource(audio);
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 128;
+        source.connect(analyser);
+        analyser.connect(audioCtx.destination);
+        dataArray = new Uint8Array(analyser.frequencyBinCount);
+      } catch (e) {
+        analyser = null;
+      }
+    }
+
+    function animateWaveform() {
+      if (audio.paused) {
+        rafId = null;
+        return;
+      }
+
+      let volumeBoost = 0;
+      if (analyser && dataArray) {
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < 24; i++) sum += dataArray[i];
+        volumeBoost = (sum / 24) / 255; // بین 0 تا 1
+      } else {
+        // شبیه‌ساز نرم ضرب‌آهنگ در صورت محدودیت CORS
+        volumeBoost = 0.25 + Math.abs(Math.sin(Date.now() / 160)) * 0.45;
+      }
+
+      const progressPct = (audio.duration && !isNaN(audio.duration))
+        ? (audio.currentTime / audio.duration)
+        : 0;
+      const activeIndex = Math.floor(progressPct * WAVE_BARS_COUNT);
+
+      for (let i = 0; i < WAVE_BARS_COUNT; i++) {
+        const bar = waveBarsEls[i];
+        if (!bar) continue;
+
+        let dynamicH = baseHeights[i];
+        if (Math.abs(i - activeIndex) <= 6) {
+          const proximity = 1 - Math.abs(i - activeIndex) / 7;
+          dynamicH = Math.min(100, Math.max(18, baseHeights[i] * (0.75 + volumeBoost * 0.85 * proximity)));
+        }
+        bar.style.height = `${Math.round(dynamicH)}%`;
+
+        bar.classList.toggle('played', i < activeIndex);
+        bar.classList.toggle('current-head', i === activeIndex);
+      }
+
+      rafId = requestAnimationFrame(animateWaveform);
+    }
+
+    // لمس و کشیدن روی موج صدا برای جلو و عقب بردن (Seek)
+    const waveContainer = document.getElementById('waveformContainer');
+    let isSeekingWave = false;
+
+    function seekFromPointer(clientX) {
+      if (!audio.duration || isNaN(audio.duration)) return;
+      const rect = waveContainer.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      audio.currentTime = ratio * audio.duration;
+
+      const activeIndex = Math.floor(ratio * WAVE_BARS_COUNT);
+      waveBarsEls.forEach((b, idx) => {
+        b.classList.toggle('played', idx < activeIndex);
+        b.classList.toggle('current-head', idx === activeIndex);
+      });
+    }
+
+    waveContainer.addEventListener('pointerdown', (e) => {
+      isSeekingWave = true;
+      waveContainer.setPointerCapture(e.pointerId);
+      seekFromPointer(e.clientX);
+    });
+    waveContainer.addEventListener('pointermove', (e) => {
+      if (isSeekingWave) seekFromPointer(e.clientX);
+    });
+    waveContainer.addEventListener('pointerup', (e) => {
+      isSeekingWave = false;
+      waveContainer.releasePointerCapture(e.pointerId);
+    });
+
     function getColor(id) {
       return COLORS[Math.abs(id || 0) % COLORS.length];
     }
@@ -955,7 +1078,7 @@
       const t = document.getElementById('toast');
       t.textContent = msg;
       t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 3400);
+      setTimeout(() => t.classList.remove('show'), 3600);
     }
 
     async function loadConfig() {
@@ -965,6 +1088,7 @@
         botUsername = data.bot_username || '';
         isAdminUser = Boolean(data.is_admin);
         if (!tgUser && data.user_name) {
+          userFullName = data.user_name;
           document.getElementById('tgUserName').textContent = data.user_name;
           document.getElementById('tgUserAvatar').textContent = data.user_name[0];
         }
@@ -1089,10 +1213,7 @@
 
       const searchInput = document.getElementById('searchInput');
       if (tab === 'search') {
-        setTimeout(() => {
-          searchInput.focus();
-          searchInput.click();
-        }, 60);
+        setTimeout(() => { searchInput.focus(); searchInput.click(); }, 60);
       } else if (tab === 'lib') {
         setFilter('fav');
       } else if (tab === 'popular') {
@@ -1111,11 +1232,8 @@
       const titles = { all: 'جدیدترین موزیک‌های آرشیو', popular: 'پرطرفدارترین ترک‌ها', fav: 'آهنگ‌های لایک‌شده شما' };
       document.getElementById('sectionTitle').textContent = titles[filter] || 'موزیک‌ها';
 
-      if (filter === 'fav') {
-        loadFavorites();
-      } else {
-        fetchSongs(true);
-      }
+      if (filter === 'fav') loadFavorites();
+      else fetchSongs(true);
     }
 
     function onSearch() {
@@ -1126,10 +1244,60 @@
       }, 280);
     }
 
+    // ثبت درخواست آهنگ برای ادمین از داخل مینی‌اپ
+    async function requestSongToAdmin(btn) {
+      const q = document.getElementById('searchInput').value.trim();
+      if (!q) return;
+
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ در حال ارسال درخواست...';
+      }
+
+      try {
+        const res = await fetch('/api/request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: q,
+            init_data: initData,
+            user_id: userId,
+            user_name: userFullName
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('✅ درخواست شما برای ادمین ارسال شد! پس از آپلود در پی‌وی به شما خبر می‌دهیم.');
+          if (btn) btn.textContent = '✅ درخواست با موفقیت ارسال شد';
+        } else {
+          showToast(`❌ ${data.detail || 'خطا در ثبت درخواست'}`);
+          if (btn) { btn.disabled = false; btn.textContent = '📩 ارسال درخواست برای ادمین'; }
+        }
+      } catch (e) {
+        showToast('❌ خطا در ارتباط با سرور');
+        if (btn) { btn.disabled = false; btn.textContent = '📩 ارسال درخواست برای ادمین'; }
+      }
+    }
+
     function renderSongs() {
       const list = document.getElementById('trackList');
+      const q = document.getElementById('searchInput').value.trim();
+
       if (!currentSongs.length) {
-        list.innerHTML = '<div class="empty-box">موزیکی یافت نشد 🎵</div>';
+        if (q) {
+          list.innerHTML = `
+            <div class="not-found-card">
+              <div style="font-size:34px;">🎵</div>
+              <div class="not-found-title">آهنگ «${escapeHtml(q)}» در آرشیو پیدا نشد</div>
+              <div class="not-found-sub">می‌توانید درخواست این آهنگ را برای ادمین بفرستید تا به محض آپلود، در پی‌وی به شما اطلاع داده شود.</div>
+              <button class="request-admin-btn" onclick="requestSongToAdmin(this)">
+                📩 ارسال درخواست برای ادمین
+              </button>
+            </div>
+          `;
+        } else {
+          list.innerHTML = '<div class="empty-box">موزیکی یافت نشد 🎵</div>';
+        }
         return;
       }
 
@@ -1144,7 +1312,7 @@
           : '';
 
         return `
-          <div class="track-row ${isCurrent ? 'active' : ''}" style="animation-delay:${Math.min(idx * 0.015, 0.25)}s">
+          <div class="track-row ${isCurrent ? 'active' : ''}">
             <div class="track-cover" id="tr_${s.uid}" style="background:${getColor(s.id)}" onclick="playSongByIndex(${idx})">
               ${escapeHtml(s.title[0] || '🎵')}
             </div>
@@ -1178,8 +1346,14 @@
       }
 
       currentSong = song;
+      initWaveformBars(song.id || 1);
       updatePlayerUI(song);
       document.getElementById('miniPlayer').classList.add('visible');
+
+      setupAudioAnalyser();
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
 
       audio.src = `/api/stream/${encodeURIComponent(song.uid)}`;
       audio.load();
@@ -1216,8 +1390,12 @@
 
     function togglePlay() {
       if (!audio.src) return;
-      if (audio.paused) audio.play().catch(() => {});
-      else audio.pause();
+      if (audio.paused) {
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+        audio.play().catch(() => {});
+      } else {
+        audio.pause();
+      }
     }
 
     function playNext() {
@@ -1296,9 +1474,7 @@
     }
 
     function openFullPlayer() {
-      if (!currentSong && currentSongs.length > 0) {
-        playSongByIndex(0);
-      }
+      if (!currentSong && currentSongs.length > 0) playSongByIndex(0);
       document.getElementById('fullPlayer').classList.add('open');
     }
     function closeFullPlayer() { document.getElementById('fullPlayer').classList.remove('open'); }
@@ -1322,6 +1498,7 @@
       document.getElementById('mpPlayBtn').innerHTML = PAUSE_SVG;
       document.getElementById('fpPlayBtn').innerHTML = PAUSE_SVG;
       document.getElementById('fpArt').classList.add('playing-scale');
+      if (!rafId) animateWaveform();
       renderSongs();
     });
     audio.addEventListener('pause', () => {
@@ -1336,15 +1513,9 @@
       if (!audio.duration || isNaN(audio.duration)) return;
       const pct = (audio.currentTime / audio.duration) * 100;
       document.getElementById('mpLineFill').style.width = `${pct}%`;
-      document.getElementById('fpSeek').value = pct;
       document.getElementById('fpCur').textContent = formatTime(audio.currentTime);
       document.getElementById('fpDur').textContent = formatTime(audio.duration);
     });
-
-    function seekAudio() {
-      if (!audio.duration || isNaN(audio.duration)) return;
-      audio.currentTime = (document.getElementById('fpSeek').value / 100) * audio.duration;
-    }
 
     function formatTime(sec) {
       const m = Math.floor(sec / 60);
