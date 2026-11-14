@@ -21,7 +21,6 @@ const TELEGRAM_FILE_API = `https://api.telegram.org/file/bot${BOT_TOKEN}`;
 let ALL_SONGS = [];
 let USERS_DB = { users: {}, requests: [] };
 let BOT_USERNAME = '';
-let updatedCounter = 0;
 const COVER_CACHE = new Map();
 
 function isAdmin(userId) {
@@ -280,11 +279,21 @@ async function resolvePlayableFile(song) {
   return { error: lastError };
 }
 
+// تابع کمکی برای ارسال پیام موقت و حذف خودکار پس از ۵ ثانیه
+async function sendAutoDeleteReply(ctx, text, delayMs = 5000) {
+  try {
+    const sent = await ctx.reply(text);
+    setTimeout(() => {
+      ctx.telegram.deleteMessage(ctx.chat.id, sent.message_id).catch(() => {});
+    }, delayMs);
+  } catch (e) {}
+}
+
 loadSongs();
 loadUsers();
 
 // ---------------------------------------------------------------------------
-// سرور وب Express و API های مینی‌اپ + پروفایل تلگرام + پنل ادمین
+// سرور وب Express و API های مینی‌اپ
 // ---------------------------------------------------------------------------
 const app = express();
 app.use(express.json());
@@ -309,7 +318,6 @@ app.get('/api/config', (req, res) => {
   });
 });
 
-// دریافت و استریم مستقیم عکس پروفایل تلگرام کاربر برای هدر مینی‌اپ
 app.get('/api/avatar/:userId', async (req, res) => {
   const uid = req.params.userId;
   if (!uid || uid === 'undefined') return res.status(404).end();
@@ -600,7 +608,7 @@ function buildMainMenu(userId) {
     Markup.button.callback('📩 درخواست موزیک', 'request_song')
   ]);
   rows.push([
-    Markup.button.switchToCurrentChat('⚡ سرچ آنی (Inline)', ''),
+    Markup.button.switchToCurrentChat('⚡ سرچ آنی (Inline)', '.'),
     Markup.button.url('🌐 گپ ما', GROUP_URL)
   ]);
 
@@ -888,6 +896,7 @@ bot.action(/^page_(\d+)$/, async (ctx) => {
   await ctx.answerCbQuery();
 });
 
+// دریافت فایل صوتی از هر کاربر در پی‌وی ربات + پیام تایید طبق تصویر + حذف خودکار بعد از ۵ ثانیه
 bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
   const msg = ctx.message || ctx.channelPost;
   if (!msg) return next();
@@ -915,13 +924,13 @@ bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
     exists.available = true;
     saveSongs();
 
-    updatedCounter++;
     if (!ctx.channelPost) {
-      if (isAdmin(ctx.from?.id) && updatedCounter % 50 === 0) {
-        ctx.reply(`🔄 تا این لحظه ${updatedCounter} آهنگ بروزرسانی شد!`).catch(() => {});
-      } else if (!isAdmin(ctx.from?.id)) {
-        ctx.reply(`⚠️ این موزیک قبلاً با کد #${exists.id} در آرشیو ثبت شده است.`).catch(() => {});
-      }
+      const dupMsg =
+        `⚠️ این موزیک قبلاً در دیتابیس ثبت شده بود و بروزرسانی شد!\n\n` +
+        `🎵 خواننده: ${exists.performer}\n` +
+        `🎧 نام آهنگ: ${exists.title}\n` +
+        `📌 کد ثبت شده: ${exists.id}`;
+      await sendAutoDeleteReply(ctx, dupMsg, 5000);
     }
     return;
   }
@@ -947,16 +956,13 @@ bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
   saveSongs();
 
   if (!ctx.channelPost) {
-    await ctx.reply(`✅ موزیک شما با موفقیت به آرشیو عمومی اضافه شد!\n🎤 خواننده: ${performer}\n🎵 عنوان: ${title}\n🆔 کد موزیک: #${newId}`).catch(() => {});
+    const confirmMsg =
+      `✅ موزیک با موفقیت در دیتابیس ذخیره شد!\n\n` +
+      `🎵 خواننده: ${performer}\n` +
+      `🎧 نام آهنگ: ${title}\n` +
+      `📌 کد ثبت شده: ${newId}`;
 
-    if (ctx.from && !isAdmin(ctx.from.id)) {
-      for (const adm of ADMIN_IDS) {
-        ctx.telegram.sendMessage(
-          adm,
-          `➕ موزیک جدید توسط کاربر اضافه شد:\n👤 ${ctx.from.first_name} (${ctx.from.id})\n🎵 ${performer} - ${title}\n🆔 کد: #${newId} (برای حذف: /del ${newId})`
-        ).catch(() => {});
-      }
-    }
+    await sendAutoDeleteReply(ctx, confirmMsg, 5000);
   }
 });
 
@@ -1015,14 +1021,15 @@ bot.on('text', async (ctx) => {
 });
 
 bot.on('inline_query', async (ctx) => {
-  const q = normalizeText(ctx.inlineQuery.query);
+  const rawQ = (ctx.inlineQuery.query || '').trim();
   let songs = getActiveSongs().filter(s => s.media_type === 'audio' && s.file_id);
 
-  if (q) {
+  if (rawQ && rawQ !== '.') {
+    const q = normalizeText(rawQ);
     const tokens = q.split(' ');
     songs = songs.filter(s => tokens.some(t => s.search_text.includes(t)));
   } else {
-    songs = [...songs].sort((a, b) => b.plays - a.plays);
+    songs = [...songs].reverse();
   }
 
   const results = songs.slice(0, 25).map(s => ({
