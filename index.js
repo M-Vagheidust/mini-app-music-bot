@@ -5,6 +5,7 @@ const axios = require('axios');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const Database = require('better-sqlite3');
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '8973013935:AAE9N-n3I8jKWg9TWu_wmZICZDaeD6zzFbw';
 const MINI_APP_URL = (process.env.MINI_APP_URL || 'https://mini-app-music-bot-production.up.railway.app').replace(/\/$/, '');
@@ -12,16 +13,98 @@ const PORT = parseInt(process.env.PORT || '8080', 10);
 const ADMIN_IDS = [849152312];
 const GROUP_URL = 'https://t.me/+k1KWTCq0FMswZjM0';
 
-const DB_FILE = path.join(__dirname, 'songs_db.json');
-const USERS_DB_FILE = path.join(__dirname, 'users_db.json');
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'gapmusic.db');
 
 const TELEGRAM_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 const TELEGRAM_FILE_API = `https://api.telegram.org/file/bot${BOT_TOKEN}`;
 
-let ALL_SONGS = [];
-let USERS_DB = { users: {}, requests: [] };
 let BOT_USERNAME = '';
 const COVER_CACHE = new Map();
+
+// ---------------------------------------------------------------------------
+// اتصال به دیتابیس SQLite (دقیقاً منطبق با ساختار فایل db ارسالی)
+// ---------------------------------------------------------------------------
+const db = new Database(DB_PATH);
+db.pragma('journal_mode = WAL');
+db.pragma('synchronous = NORMAL');
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS songs (
+    id INTEGER PRIMARY KEY,
+    uid TEXT UNIQUE,
+    from_chat_id TEXT,
+    message_id INTEGER,
+    file_id TEXT,
+    file_unique_id TEXT,
+    title TEXT,
+    performer TEXT,
+    search_text TEXT,
+    media_type TEXT DEFAULT 'audio',
+    plays INTEGER DEFAULT 0,
+    likes INTEGER DEFAULT 0,
+    available INTEGER DEFAULT 1
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_songs_plays ON songs (plays DESC);
+  CREATE INDEX IF NOT EXISTS idx_songs_likes ON songs (likes DESC);
+  CREATE INDEX IF NOT EXISTS idx_songs_id_desc ON songs (id DESC);
+
+  CREATE VIRTUAL TABLE IF NOT EXISTS songs_fts USING fts5(
+    id UNINDEXED,
+    title,
+    performer,
+    search_text
+  );
+
+  CREATE TRIGGER IF NOT EXISTS songs_ai AFTER INSERT ON songs BEGIN
+    INSERT INTO songs_fts(id, title, performer, search_text)
+    VALUES (new.id, new.title, new.performer, new.search_text);
+  END;
+
+  CREATE TRIGGER IF NOT EXISTS songs_ad AFTER DELETE ON songs BEGIN
+    DELETE FROM songs_fts WHERE id = old.id;
+  END;
+
+  CREATE TRIGGER IF NOT EXISTS songs_au AFTER UPDATE ON songs BEGIN
+    DELETE FROM songs_fts WHERE id = old.id;
+    INSERT INTO songs_fts(id, title, performer, search_text)
+    VALUES (new.id, new.title, new.performer, new.search_text);
+  END;
+
+  CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    name TEXT,
+    username TEXT,
+    joined_at INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS favorites (
+    user_id TEXT,
+    song_id INTEGER,
+    created_at INTEGER,
+    PRIMARY KEY (user_id, song_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT,
+    user_name TEXT,
+    query TEXT,
+    expanded_query TEXT,
+    status TEXT DEFAULT 'pending',
+    fulfilled_song_id INTEGER,
+    created_at INTEGER,
+    fulfilled_at INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS lyrics_cache (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    song_key TEXT UNIQUE,
+    synced_lyrics TEXT,
+    plain_lyrics TEXT,
+    cached_at INTEGER
+  );
+`);
 
 function isAdmin(userId) {
   return ADMIN_IDS.includes(Number(userId));
@@ -128,7 +211,6 @@ function normalizeText(text) {
   return t.replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
 }
 
-// تبدیل آوایی فارسی به حروف انگلیسی پایه (فینگیلیش) برای تطبیق دوزبانه
 function persianToLatinPhonetic(text) {
   const norm = normalizeText(text);
   if (!/[آ-ی]/.test(norm)) return norm;
@@ -147,7 +229,6 @@ function persianToLatinPhonetic(text) {
   return out.replace(/\s+/g, ' ').trim();
 }
 
-// تولید تمام کلیدواژه‌های معادل فارسی و انگلیسی برای یک عبارت
 function expandBilingualTerms(text) {
   const norm = normalizeText(text);
   if (!norm) return '';
@@ -158,7 +239,7 @@ function expandBilingualTerms(text) {
 
   for (const group of BILINGUAL_ALIASES) {
     const normGroup = group.map(g => normalizeText(g));
-    if (normGroup.some(alias => alias && (norm.includes(alias) || alias.includes(norm) && norm.length >= 3))) {
+    if (normGroup.some(alias => alias && (norm.includes(alias) || (alias.includes(norm) && norm.length >= 3)))) {
       normGroup.forEach(a => extras.add(a));
     }
   }
@@ -178,139 +259,137 @@ function cleanDisplayText(text) {
   return t || 'نامشخص';
 }
 
-function isPlayable(song) {
-  const hasFile = Boolean(song.file_id && String(song.file_id).trim());
-  const hasSrc = song.from_chat_id != null && song.message_id != null;
-  return hasFile || hasSrc;
+// ---------------------------------------------------------------------------
+// توابع دسترسی به SQLite
+// ---------------------------------------------------------------------------
+const ACTIVE_WHERE = "available = 1 AND (COALESCE(TRIM(file_id), '') != '' OR (from_chat_id IS NOT NULL AND message_id IS NOT NULL))";
+
+function getActiveSongsCount() {
+  return db.prepare(`SELECT COUNT(*) AS c FROM songs WHERE ${ACTIVE_WHERE}`).get().c;
 }
 
-function loadSongs() {
-  try {
-    if (!fs.existsSync(DB_FILE)) {
-      ALL_SONGS = [];
-      return;
-    }
-    const raw = fs.readFileSync(DB_FILE, 'utf8').replace(/^\uFEFF/, '');
-    const parsed = JSON.parse(raw);
-    const items = Array.isArray(parsed) ? parsed : (parsed.songs || parsed.messages || []);
-    const seen = new Set();
+function getUsersCount() {
+  return db.prepare('SELECT COUNT(*) AS c FROM users').get().c;
+}
 
-    ALL_SONGS = items.filter(x => x && typeof x === 'object').map((item, idx) => {
-      let id = parseInt(item.id, 10) || (idx + 1);
-      while (seen.has(id)) id++;
-      seen.add(id);
-
-      const title = cleanDisplayText(item.title || item.name || 'نامشخص');
-      const performer = cleanDisplayText(item.performer || item.artist || 'نامشخص');
-      const sourceChat = item.from_chat_id ?? item.chat_id ?? null;
-      const messageId = item.message_id ?? null;
-      const fileId = String(item.file_id || '').trim();
-      const baseText = `${title} ${performer} ${item.search_text || ''}`;
-
-      const song = {
-        id,
-        uid: `${id}_${messageId || idx}`,
-        from_chat_id: sourceChat,
-        message_id: messageId,
-        file_id: fileId,
-        file_unique_id: String(item.file_unique_id || '').trim(),
-        title,
-        performer,
-        search_text: expandBilingualTerms(baseText),
-        media_type: String(item.media_type || 'audio').toLowerCase(),
-        plays: Math.max(0, parseInt(item.plays, 10) || 0),
-        likes: Math.max(0, parseInt(item.likes, 10) || 0),
-        available: item.available !== undefined ? Boolean(item.available) : true
-      };
-      if (!isPlayable(song)) song.available = false;
-      return song;
-    });
-    console.log(`✅ دیتابیس موزیک بارگذاری شد: کل=${ALL_SONGS.length} | فعال=${getActiveSongs().length}`);
-  } catch (err) {
-    console.error('❌ خطا در خواندن songs_db.json:', err.message);
+function getRequestsCount(onlyPending = false) {
+  if (onlyPending) {
+    return db.prepare("SELECT COUNT(*) AS c FROM requests WHERE status = 'pending'").get().c;
   }
+  return db.prepare('SELECT COUNT(*) AS c FROM requests').get().c;
 }
 
-function saveSongs() {
-  try {
-    const tmp = `${DB_FILE}.tmp`;
-    fs.writeFileSync(tmp, JSON.stringify(ALL_SONGS, null, 2), 'utf8');
-    fs.renameSync(tmp, DB_FILE);
-  } catch (err) {}
+function getSongById(songId) {
+  return db.prepare('SELECT * FROM songs WHERE id = ?').get(Number(songId));
 }
 
-function loadUsers() {
-  try {
-    if (!fs.existsSync(USERS_DB_FILE)) {
-      USERS_DB = { users: {}, requests: [] };
-      return;
-    }
-    const raw = fs.readFileSync(USERS_DB_FILE, 'utf8');
-    const data = JSON.parse(raw);
-    USERS_DB = { users: data.users || {}, requests: data.requests || [] };
-  } catch (err) {}
+function getActiveSongByUidOrId(uidOrId) {
+  return db.prepare(`SELECT * FROM songs WHERE ${ACTIVE_WHERE} AND (uid = ? OR id = ?) LIMIT 1`)
+    .get(String(uidOrId), Number(uidOrId) || -1);
 }
 
-function saveUsers() {
-  try {
-    const tmp = `${USERS_DB_FILE}.tmp`;
-    fs.writeFileSync(tmp, JSON.stringify(USERS_DB, null, 2), 'utf8');
-    fs.renameSync(tmp, USERS_DB_FILE);
-  } catch (err) {}
+function getSongsPage(filter = 'all', offset = 0, limit = 60) {
+  const orderBy = filter === 'popular' ? 'plays DESC, likes DESC, id DESC' : 'id DESC';
+  const total = getActiveSongsCount();
+  const items = db.prepare(`
+    SELECT id, uid, title, performer, likes, plays
+    FROM songs
+    WHERE ${ACTIVE_WHERE}
+    ORDER BY ${orderBy}
+    LIMIT ? OFFSET ?
+  `).all(limit, offset);
+  return { total, items };
 }
 
-function getActiveSongs() {
-  return ALL_SONGS.filter(s => s.available && isPlayable(s));
+function getSongsByIds(ids) {
+  if (!ids || !ids.length) return [];
+  const placeholders = ids.map(() => '?').join(',');
+  const rows = db.prepare(`SELECT * FROM songs WHERE ${ACTIVE_WHERE} AND id IN (${placeholders})`).all(...ids);
+  const map = new Map(rows.map(r => [r.id, r]));
+  return ids.map(id => map.get(id)).filter(Boolean);
+}
+
+function getRandomActiveSong() {
+  return db.prepare(`SELECT * FROM songs WHERE ${ACTIVE_WHERE} ORDER BY RANDOM() LIMIT 1`).get();
+}
+
+function incrementSongPlays(songId) {
+  db.prepare('UPDATE songs SET plays = COALESCE(plays, 0) + 1 WHERE id = ?').run(songId);
 }
 
 function deleteSongById(songId) {
-  const idx = ALL_SONGS.findIndex(s => s.id === Number(songId));
-  if (idx === -1) return null;
-  const [removed] = ALL_SONGS.splice(idx, 1);
-  saveSongs();
-  return removed;
+  const song = getSongById(songId);
+  if (!song) return null;
+  const tx = db.transaction(() => {
+    db.prepare('DELETE FROM songs WHERE id = ?').run(Number(songId));
+    db.prepare('DELETE FROM favorites WHERE song_id = ?').run(Number(songId));
+  });
+  tx();
+  return song;
 }
 
 function registerUser(user) {
   if (!user || !user.id) return;
   const uid = String(user.id);
   const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.name || '';
-  if (!USERS_DB.users[uid]) {
-    USERS_DB.users[uid] = {
-      id: user.id,
-      name: fullName,
-      username: user.username || '',
-      favorites: [],
-      joined_at: Math.floor(Date.now() / 1000)
-    };
-    saveUsers();
-  } else if (fullName && USERS_DB.users[uid].name !== fullName) {
-    USERS_DB.users[uid].name = fullName;
-    saveUsers();
-  }
+  const username = user.username || '';
+  const now = Math.floor(Date.now() / 1000);
+
+  db.prepare(`
+    INSERT INTO users (id, name, username, joined_at)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      name = CASE WHEN excluded.name != '' THEN excluded.name ELSE users.name END,
+      username = CASE WHEN excluded.username != '' THEN excluded.username ELSE users.username END
+  `).run(uid, fullName, username, now);
+}
+
+function getUserById(userId) {
+  if (!userId) return null;
+  return db.prepare('SELECT * FROM users WHERE id = ?').get(String(userId));
+}
+
+function getUserFavorites(userId) {
+  if (!userId) return { favorite_ids: [], items: [] };
+  const uid = String(userId);
+  const items = db.prepare(`
+    SELECT s.id, s.uid, s.title, s.performer, s.likes, s.plays
+    FROM favorites f
+    JOIN songs s ON s.id = f.song_id
+    WHERE f.user_id = ? AND ${ACTIVE_WHERE.replace(/available/g, 's.available').replace(/file_id/g, 's.file_id').replace(/from_chat_id/g, 's.from_chat_id').replace(/message_id/g, 's.message_id')}
+    ORDER BY f.created_at DESC
+  `).all(uid);
+  return { favorite_ids: items.map(s => s.id), items };
+}
+
+function isSongFavorited(userId, songId) {
+  return Boolean(db.prepare('SELECT 1 FROM favorites WHERE user_id = ? AND song_id = ?').get(String(userId), Number(songId)));
 }
 
 function toggleFavorite(userId, songId) {
   const uid = String(userId);
-  if (!USERS_DB.users[uid]) {
-    USERS_DB.users[uid] = { id: userId, name: '', username: '', favorites: [], joined_at: Math.floor(Date.now() / 1000) };
-  }
-  const favs = USERS_DB.users[uid].favorites;
-  const song = ALL_SONGS.find(s => s.id === songId);
-  const idx = favs.indexOf(songId);
-  let liked = false;
+  const sid = Number(songId);
+  const now = Math.floor(Date.now() / 1000);
 
-  if (idx > -1) {
-    favs.splice(idx, 1);
-    if (song) song.likes = Math.max(0, song.likes - 1);
-  } else {
-    favs.push(songId);
-    liked = true;
-    if (song) song.likes = (song.likes || 0) + 1;
-  }
-  saveUsers();
-  if (song) saveSongs();
-  return { liked, likes: song ? song.likes : 0, favorites: favs };
+  db.prepare('INSERT OR IGNORE INTO users (id, name, username, joined_at) VALUES (?, ?, ?, ?)').run(uid, '', '', now);
+
+  const tx = db.transaction(() => {
+    const exists = db.prepare('SELECT 1 FROM favorites WHERE user_id = ? AND song_id = ?').get(uid, sid);
+    if (exists) {
+      db.prepare('DELETE FROM favorites WHERE user_id = ? AND song_id = ?').run(uid, sid);
+      db.prepare('UPDATE songs SET likes = MAX(0, COALESCE(likes, 0) - 1) WHERE id = ?').run(sid);
+      return false;
+    } else {
+      db.prepare('INSERT INTO favorites (user_id, song_id, created_at) VALUES (?, ?, ?)').run(uid, sid, now);
+      db.prepare('UPDATE songs SET likes = COALESCE(likes, 0) + 1 WHERE id = ?').run(sid);
+      return true;
+    }
+  });
+
+  const liked = tx();
+  const song = db.prepare('SELECT likes FROM songs WHERE id = ?').get(sid);
+  const favIds = db.prepare('SELECT song_id FROM favorites WHERE user_id = ?').all(uid).map(r => r.song_id);
+  return { liked, likes: song ? song.likes : 0, favorites: favIds };
 }
 
 function resolveUserId(initData, fallbackId) {
@@ -341,53 +420,110 @@ function resolveUserId(initData, fallbackId) {
   return null;
 }
 
-// موتور جستجوی هوشمند دوزبانه (فارسی + انگلیسی + فینگیلیش)
-function smartSearchSongs(rawQuery, sourceList) {
+// موتور جستجوی هوشمند دوزبانه با سرعت بالای FTS5 در SQLite
+function smartSearchSongs(rawQuery, { onlyWithFileId = false, limit = 200 } = {}) {
   const normQ = normalizeText(rawQuery);
-  if (!normQ) return sourceList;
+  if (!normQ) return [];
 
   const expandedQ = expandBilingualTerms(normQ);
-  const qTokens = Array.from(new Set(expandedQ.split(' ').filter(t => t.length >= 2)));
   const rawTokens = normQ.split(' ').filter(Boolean);
+  const qTokens = Array.from(new Set(expandedQ.split(' ').filter(t => t.length >= 2)));
+  const searchTokens = qTokens.length ? qTokens : rawTokens;
 
-  const scored = [];
-  for (const s of sourceList) {
-    const sText = s.search_text || '';
-    if (rawTokens.every(t => sText.includes(t))) {
-      scored.push({ song: s, score: 100 });
-      continue;
+  const extraFileWhere = onlyWithFileId ? " AND COALESCE(TRIM(s.file_id), '') != ''" : '';
+  let candidates = [];
+
+  // ۱. جستجوی فوق‌سریع با FTS5
+  try {
+    const ftsQuery = searchTokens
+      .slice(0, 12)
+      .map(t => `"${t.replace(/"/g, '')}"*`)
+      .join(' OR ');
+
+    if (ftsQuery) {
+      candidates = db.prepare(`
+        SELECT s.*
+        FROM songs_fts f
+        JOIN songs s ON s.id = f.id
+        WHERE songs_fts MATCH ?
+          AND s.available = 1
+          AND (COALESCE(TRIM(s.file_id), '') != '' OR (s.from_chat_id IS NOT NULL AND s.message_id IS NOT NULL))
+          ${extraFileWhere}
+        LIMIT 300
+      `).all(ftsQuery);
     }
-    const matchedCount = qTokens.filter(t => sText.includes(t)).length;
-    if (matchedCount > 0) {
-      scored.push({ song: s, score: matchedCount * 10 });
+  } catch (e) {
+    candidates = [];
+  }
+
+  // ۲. Fallback با LIKE اگر عبارت خیلی کوتاه یا خاص بود
+  if (!candidates.length && searchTokens.length) {
+    const likeTokens = searchTokens.slice(0, 8);
+    const whereOr = likeTokens.map(() => 'search_text LIKE ?').join(' OR ');
+    const params = likeTokens.map(t => `%${t}%`);
+    candidates = db.prepare(`
+      SELECT * FROM songs
+      WHERE ${ACTIVE_WHERE} ${onlyWithFileId ? "AND COALESCE(TRIM(file_id), '') != ''" : ''}
+        AND (${whereOr})
+      LIMIT 300
+    `).all(...params);
+  }
+
+  // امتیازدهی و مرتب‌سازی دقیق نتایج
+  const scored = [];
+  for (const s of candidates) {
+    const sText = (s.search_text || '').toLowerCase();
+    const titlePerformer = normalizeText(`${s.title} ${s.performer}`);
+    let score = 0;
+
+    if (rawTokens.every(t => titlePerformer.includes(t))) {
+      score += 150;
+    } else if (rawTokens.every(t => sText.includes(t))) {
+      score += 100;
+    }
+
+    const matchedCount = searchTokens.filter(t => sText.includes(t)).length;
+    score += matchedCount * 10;
+
+    if (score > 0) {
+      scored.push({ song: s, score });
     }
   }
 
-  scored.sort((a, b) => b.score - a.score);
-  return scored.map(x => x.song);
+  scored.sort((a, b) => (b.score - a.score) || ((b.song.plays || 0) - (a.song.plays || 0)) || (b.song.id - a.song.id));
+  return scored.slice(0, limit).map(x => x.song);
 }
 
-// ثبت درخواست موزیک و ارسال فوری به پی‌وی ادمین
+// ثبت درخواست موزیک در SQLite و ارسال فوری به پی‌وی ادمین
 async function submitSongRequest(userId, userName, queryText) {
   const cleanQ = String(queryText || '').trim();
   if (!cleanQ) return null;
 
-  const existing = USERS_DB.requests.find(
-    r => String(r.user_id) === String(userId) && r.status === 'pending' && normalizeText(r.query) === normalizeText(cleanQ)
-  );
+  const uid = String(userId);
+  const normQ = normalizeText(cleanQ);
+  const pendingByUser = db.prepare("SELECT * FROM requests WHERE user_id = ? AND status = 'pending'").all(uid);
+  const existing = pendingByUser.find(r => normalizeText(r.query) === normQ);
   if (existing) return existing;
 
+  const savedUser = getUserById(uid);
+  const finalName = userName || savedUser?.name || 'کاربر';
+  const expanded = expandBilingualTerms(cleanQ);
+  const now = Math.floor(Date.now() / 1000);
+
+  const info = db.prepare(`
+    INSERT INTO requests (user_id, user_name, query, expanded_query, status, created_at)
+    VALUES (?, ?, ?, ?, 'pending', ?)
+  `).run(uid, finalName, cleanQ, expanded, now);
+
   const reqObj = {
-    id: USERS_DB.requests.length + 1,
-    user_id: userId,
-    user_name: userName || USERS_DB.users[String(userId)]?.name || 'کاربر',
+    id: info.lastInsertRowid,
+    user_id: uid,
+    user_name: finalName,
     query: cleanQ,
-    expanded_query: expandBilingualTerms(cleanQ),
+    expanded_query: expanded,
     status: 'pending',
-    created_at: Math.floor(Date.now() / 1000)
+    created_at: now
   };
-  USERS_DB.requests.push(reqObj);
-  saveUsers();
 
   const adminMsg =
     `📩 **درخواست موزیک جدید از مینی‌اپ/ربات**\n\n` +
@@ -409,11 +545,13 @@ async function submitSongRequest(userId, userName, queryText) {
 
 // بررسی و اطلاع‌رسانی خودکار به کاربرانی که این آهنگ را درخواست داده بودند
 async function notifyFulfilledRequests(song) {
-  const pending = USERS_DB.requests.filter(r => r.status === 'pending');
+  const pending = db.prepare("SELECT * FROM requests WHERE status = 'pending'").all();
   if (!pending.length) return;
 
   const songSearch = song.search_text || expandBilingualTerms(`${song.title} ${song.performer}`);
-  let changed = false;
+  const updateReq = db.prepare(`
+    UPDATE requests SET status = 'fulfilled', fulfilled_song_id = ?, fulfilled_at = ? WHERE id = ?
+  `);
 
   for (const req of pending) {
     const reqExpanded = req.expanded_query || expandBilingualTerms(req.query);
@@ -422,10 +560,7 @@ async function notifyFulfilledRequests(song) {
 
     const isMatch = tokens.some(t => songSearch.includes(t));
     if (isMatch && req.user_id) {
-      req.status = 'fulfilled';
-      req.fulfilled_song_id = song.id;
-      req.fulfilled_at = Math.floor(Date.now() / 1000);
-      changed = true;
+      updateReq.run(song.id, Math.floor(Date.now() / 1000), req.id);
 
       const notifyText =
         `🎉 **خبر خوش! موزیک درخواستی شما آماده شد**\n\n` +
@@ -449,8 +584,6 @@ async function notifyFulfilledRequests(song) {
       }).catch(() => {});
     }
   }
-
-  if (changed) saveUsers();
 }
 
 async function resolvePlayableFile(song) {
@@ -469,6 +602,7 @@ async function resolvePlayableFile(song) {
       lastError = e.response?.data?.description || e.message;
       if (lastError.includes('wrong file_id')) {
         song.file_id = '';
+        db.prepare("UPDATE songs SET file_id = '' WHERE id = ?").run(song.id);
       }
     }
   }
@@ -499,7 +633,9 @@ async function resolvePlayableFile(song) {
         if (audioObj?.file_id) {
           song.file_id = audioObj.file_id;
           song.from_chat_id = targetChat;
-          saveSongs();
+          db.prepare('UPDATE songs SET file_id = ?, from_chat_id = ? WHERE id = ?')
+            .run(song.file_id, song.from_chat_id, song.id);
+
           const check2 = await axios.get(`${TELEGRAM_API}/getFile`, {
             params: { file_id: song.file_id },
             timeout: 10000
@@ -526,8 +662,7 @@ async function sendAutoDeleteReply(ctx, text, delayMs = 5000) {
   } catch (e) {}
 }
 
-loadSongs();
-loadUsers();
+console.log(`✅ دیتابیس SQLite متصل شد (${DB_PATH}) | موزیک‌های فعال: ${getActiveSongsCount()} | کاربران: ${getUsersCount()}`);
 
 // ---------------------------------------------------------------------------
 // سرور وب Express و API های مینی‌اپ
@@ -544,12 +679,12 @@ app.get('/', (req, res) => {
 
 app.get('/api/config', (req, res) => {
   const userId = resolveUserId(req.query.init_data, req.query.user_id);
-  const savedUser = userId ? USERS_DB.users[String(userId)] : null;
+  const savedUser = getUserById(userId);
   res.json({
     bot_username: BOT_USERNAME,
-    total_songs: getActiveSongs().length,
-    total_users: Object.keys(USERS_DB.users).length,
-    total_requests: USERS_DB.requests.length,
+    total_songs: getActiveSongsCount(),
+    total_users: getUsersCount(),
+    total_requests: getRequestsCount(),
     is_admin: isAdmin(userId),
     user_name: savedUser?.name || ''
   });
@@ -565,9 +700,8 @@ app.get('/api/avatar/:userId', async (req, res) => {
       timeout: 8000
     });
     const photos = photosResp.data?.result?.photos;
-    if (!photos || !photos.length || !photos[0].length) {
-      return res.status(404).end();
-    }
+    if (!photos || !photos.length || !photos[0].length) return res.status(404).end();
+
     const fileId = photos[0][0].file_id;
     const fileResp = await axios.get(`${TELEGRAM_API}/getFile`, {
       params: { file_id: fileId },
@@ -588,47 +722,37 @@ app.get('/api/avatar/:userId', async (req, res) => {
   }
 });
 
-// جستجوی دوزبانه هوشمند (فارسی + انگلیسی) در مینی‌اپ
 app.get('/api/songs', (req, res) => {
   const rawQ = String(req.query.q || '').trim();
   const filter = req.query.filter || 'all';
   const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
   const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 60));
 
-  let songs = [...getActiveSongs()].reverse();
-  if (filter === 'popular') {
-    songs = [...getActiveSongs()].sort((a, b) => (b.plays - a.plays) || (b.likes - a.likes));
-  }
-
   if (rawQ) {
-    songs = smartSearchSongs(rawQ, songs);
+    const found = smartSearchSongs(rawQ, { limit: 300 });
+    const total = found.length;
+    const items = found.slice(offset, offset + limit).map(s => ({
+      uid: s.uid,
+      id: s.id,
+      title: s.title,
+      performer: s.performer,
+      likes: s.likes || 0,
+      plays: s.plays || 0
+    }));
+    return res.json({ total, offset, limit, has_more: offset + items.length < total, items });
   }
 
-  const total = songs.length;
-  const items = songs.slice(offset, offset + limit).map(s => ({
-    uid: s.uid,
-    id: s.id,
-    title: s.title,
-    performer: s.performer,
-    likes: s.likes || 0,
-    plays: s.plays || 0
-  }));
-
+  const { total, items } = getSongsPage(filter, offset, limit);
   res.json({ total, offset, limit, has_more: offset + items.length < total, items });
 });
 
-// ثبت درخواست آهنگ از داخل مینی‌اپ برای ادمین
 app.post('/api/request', async (req, res) => {
   const queryText = String(req.body?.query || '').trim();
   const userId = resolveUserId(req.body?.init_data, req.body?.user_id);
   const userName = String(req.body?.user_name || '').trim();
 
-  if (!queryText) {
-    return res.status(400).json({ detail: 'لطفاً نام آهنگ را وارد کنید.' });
-  }
-  if (!userId) {
-    return res.status(400).json({ detail: 'برای ثبت درخواست، مینی‌اپ را از داخل تلگرام باز کنید.' });
-  }
+  if (!queryText) return res.status(400).json({ detail: 'لطفاً نام آهنگ را وارد کنید.' });
+  if (!userId) return res.status(400).json({ detail: 'برای ثبت درخواست، مینی‌اپ را از داخل تلگرام باز کنید.' });
 
   registerUser({ id: userId, first_name: userName });
   const created = await submitSongRequest(userId, userName, queryText);
@@ -643,14 +767,12 @@ app.delete('/api/admin/song/:id', (req, res) => {
 
   const songId = parseInt(req.params.id, 10);
   const removed = deleteSongById(songId);
-  if (!removed) {
-    return res.status(404).json({ detail: 'موزیک یافت نشد یا قبلاً حذف شده است.' });
-  }
+  if (!removed) return res.status(404).json({ detail: 'موزیک یافت نشد یا قبلاً حذف شده است.' });
 
   res.json({
     status: 'ok',
     deleted: removed,
-    remaining: getActiveSongs().length
+    remaining: getActiveSongsCount()
   });
 });
 
@@ -682,22 +804,7 @@ app.get('/api/cover', async (req, res) => {
 app.get('/api/favorites', (req, res) => {
   const userId = resolveUserId(req.query.init_data, req.query.user_id);
   if (!userId) return res.json({ favorite_ids: [], items: [] });
-
-  const favIds = USERS_DB.users[String(userId)]?.favorites || [];
-  const activeMap = new Map(getActiveSongs().map(s => [s.id, s]));
-  const items = [...favIds].reverse()
-    .map(id => activeMap.get(id))
-    .filter(Boolean)
-    .map(s => ({
-      uid: s.uid,
-      id: s.id,
-      title: s.title,
-      performer: s.performer,
-      likes: s.likes || 0,
-      plays: s.plays || 0
-    }));
-
-  res.json({ favorite_ids: favIds, items });
+  res.json(getUserFavorites(userId));
 });
 
 app.post('/api/favorite/:id', (req, res) => {
@@ -710,9 +817,8 @@ app.post('/api/favorite/:id', (req, res) => {
 });
 
 app.get('/api/random', (req, res) => {
-  const active = getActiveSongs();
-  if (!active.length) return res.status(404).json({ detail: 'آهنگی یافت نشد' });
-  const s = active[Math.floor(Math.random() * active.length)];
+  const s = getRandomActiveSong();
+  if (!s) return res.status(404).json({ detail: 'آهنگی یافت نشد' });
   res.json({
     uid: s.uid,
     id: s.id,
@@ -723,7 +829,7 @@ app.get('/api/random', (req, res) => {
 });
 
 app.get('/api/stream/:uid', async (req, res) => {
-  const song = getActiveSongs().find(s => s.uid === req.params.uid || String(s.id) === req.params.uid);
+  const song = getActiveSongByUidOrId(req.params.uid);
   if (!song) return res.status(404).json({ detail: 'موزیک یافت نشد' });
 
   const resolved = await resolvePlayableFile(song);
@@ -745,7 +851,9 @@ app.get('/api/stream/:uid', async (req, res) => {
       validateStatus: status => status >= 200 && status < 300
     });
 
-    song.plays = (song.plays || 0) + 1;
+    if (!req.headers.range || req.headers.range.startsWith('bytes=0-')) {
+      incrementSongPlays(song.id);
+    }
 
     res.status(streamResp.status);
     res.setHeader('Content-Type', resolved.filePath.endsWith('.m4a') ? 'audio/mp4' : 'audio/mpeg');
@@ -767,7 +875,7 @@ app.get('/api/stream/:uid', async (req, res) => {
 });
 
 app.post('/api/send/:uid', async (req, res) => {
-  const song = getActiveSongs().find(s => s.uid === req.params.uid || String(s.id) === req.params.uid);
+  const song = getActiveSongByUidOrId(req.params.uid);
   if (!song) return res.status(404).json({ detail: 'موزیک یافت نشد' });
 
   const deepLink = BOT_USERNAME ? `https://t.me/${BOT_USERNAME}?start=song_${song.id}` : '';
@@ -834,8 +942,8 @@ const bot = new Telegraf(BOT_TOKEN);
 const userSessions = new Map();
 
 function buildMainMenu(userId) {
-  const activeCount = getActiveSongs().length;
-  const favCount = USERS_DB.users[String(userId)]?.favorites?.length || 0;
+  const activeCount = getActiveSongsCount();
+  const favCount = db.prepare('SELECT COUNT(*) AS c FROM favorites WHERE user_id = ?').get(String(userId)).c;
 
   const text =
     `سلام! 👋 به ربات و پلیر هوشمند **GapMusic** خوش آمدید.\n\n` +
@@ -878,7 +986,7 @@ function buildSongListKeyboard(songs, page = 0, perPage = 6) {
   const slice = songs.slice(safePage * perPage, (safePage + 1) * perPage);
 
   const rows = slice.map(s => {
-    const icon = s.plays >= 10 ? '🔥' : '🎵';
+    const icon = (s.plays || 0) >= 10 ? '🔥' : '🎵';
     return [Markup.button.callback(`${icon} ${s.performer} - ${s.title}`.slice(0, 58), `dl_${s.id}`)];
   });
 
@@ -896,11 +1004,11 @@ function buildSongListKeyboard(songs, page = 0, perPage = 6) {
 }
 
 async function sendSongToChat(ctx, chatId, song, userId) {
-  song.plays = (song.plays || 0) + 1;
-  saveSongs();
+  incrementSongPlays(song.id);
+  const updatedPlays = (song.plays || 0) + 1;
 
-  const liked = (USERS_DB.users[String(userId)]?.favorites || []).includes(song.id);
-  const likeBtnText = liked ? `❤️ در پلی‌لیست (${song.likes})` : `🤍 افزودن به پلی‌لیست (${song.likes})`;
+  const liked = isSongFavorited(userId, song.id);
+  const likeBtnText = liked ? `❤️ در پلی‌لیست (${song.likes || 0})` : `🤍 افزودن به پلی‌لیست (${song.likes || 0})`;
 
   const rows = [
     [
@@ -915,7 +1023,7 @@ async function sendSongToChat(ctx, chatId, song, userId) {
     rows.push([Markup.button.webApp('🎧 باز کردن پلیر مینی‌اپ', MINI_APP_URL)]);
   }
 
-  const caption = `🎵 ${song.performer} - ${song.title}\n▶️ دریافت: ${song.plays} مرتبه | 🆔 #${song.id}`;
+  const caption = `🎵 ${song.performer} - ${song.title}\n▶️ دریافت: ${updatedPlays} مرتبه | 🆔 #${song.id}`;
   const extra = { caption, ...Markup.inlineKeyboard(rows) };
 
   const resolved = await resolvePlayableFile(song);
@@ -950,7 +1058,7 @@ bot.start(async (ctx) => {
 
   if (payload.startsWith('song_')) {
     const songId = parseInt(payload.replace('song_', ''), 10);
-    const song = ALL_SONGS.find(s => s.id === songId);
+    const song = getSongById(songId);
 
     if (!song) {
       await ctx.reply('❌ متأسفانه این موزیک در آرشیو پیدا نشد.');
@@ -962,7 +1070,6 @@ bot.start(async (ctx) => {
     await ctx.telegram.deleteMessage(ctx.chat.id, waitMsg.message_id).catch(() => {});
 
     if (ok) return;
-
     await ctx.reply('⚠️ دسترسی به فایل این موزیک برقرار نشد.');
     return;
   }
@@ -973,19 +1080,18 @@ bot.start(async (ctx) => {
 
 bot.command('admin', async (ctx) => {
   if (!isAdmin(ctx.from.id)) return;
-  const pendingCount = USERS_DB.requests.filter(r => r.status === 'pending').length;
   const msg =
-    `🛡️ **پنل مدیریت ادمین GapMusic**\n\n` +
-    `🎵 کل موزیک‌های فعال: **${getActiveSongs().length}**\n` +
-    `👥 تعداد کاربران: **${Object.keys(USERS_DB.users).length}**\n` +
-    `📩 درخواست‌های در انتظار: **${pendingCount}** (کل: ${USERS_DB.requests.length})\n\n` +
+    `🛡️ **پنل مدیریت ادمین GapMusic (SQLite)**\n\n` +
+    `🎵 کل موزیک‌های فعال: **${getActiveSongsCount()}**\n` +
+    `👥 تعداد کاربران: **${getUsersCount()}**\n` +
+    `📩 درخواست‌های در انتظار: **${getRequestsCount(true)}** (کل: ${getRequestsCount()})\n\n` +
     `📌 **روش‌های حذف آهنگ:**\n` +
     `1️⃣ داخل مینی‌اپ، روی دکمه 🗑️ کنار هر آهنگ بزنید.\n` +
     `2️⃣ دستور \`/del کد_آهنگ\` را بفرستید (مثلاً: \`/del 125\`).`;
 
   await ctx.replyWithMarkdown(msg, Markup.inlineKeyboard([
     [Markup.button.webApp('🛡️ ورود به پنل مدیریتی در مینی‌اپ', MINI_APP_URL)],
-    [Markup.button.callback('📦 دریافت فایل دیتابیس', 'admin_export')]
+    [Markup.button.callback('📦 دریافت بکاپ دیتابیس SQLite', 'admin_export')]
   ]));
 });
 
@@ -1002,34 +1108,53 @@ bot.command('del', async (ctx) => {
 
 bot.action('admin_panel', async (ctx) => {
   if (!isAdmin(ctx.from.id)) return ctx.answerCbQuery('دسترسی غیرمجاز', { show_alert: true });
-  const pendingCount = USERS_DB.requests.filter(r => r.status === 'pending').length;
   const msg =
-    `🛡️ **پنل مدیریت ادمین GapMusic**\n\n` +
-    `🎵 کل موزیک‌های فعال: **${getActiveSongs().length}**\n` +
-    `👥 تعداد کاربران: **${Object.keys(USERS_DB.users).length}**\n` +
-    `📩 درخواست‌های در انتظار: **${pendingCount}**\n\n` +
+    `🛡️ **پنل مدیریت ادمین GapMusic (SQLite)**\n\n` +
+    `🎵 کل موزیک‌های فعال: **${getActiveSongsCount()}**\n` +
+    `👥 تعداد کاربران: **${getUsersCount()}**\n` +
+    `📩 درخواست‌های در انتظار: **${getRequestsCount(true)}**\n\n` +
     `💡 برای حذف سریع: دستور \`/del کد_آهنگ\` را بفرستید یا در مینی‌اپ آیکون 🗑️ را بزنید.`;
 
   await ctx.editMessageText(msg, {
     parse_mode: 'Markdown',
     ...Markup.inlineKeyboard([
       [Markup.button.webApp('🛡️ مدیریت و حذف در مینی‌اپ', MINI_APP_URL)],
-      [Markup.button.callback('📦 دریافت فایل دیتابیس', 'admin_export')],
+      [Markup.button.callback('📦 دریافت بکاپ دیتابیس SQLite', 'admin_export')],
       [Markup.button.callback('🔙 منوی اصلی', 'main_menu')]
     ])
   }).catch(() => {});
   await ctx.answerCbQuery();
 });
 
+async function sendDbBackup(ctx) {
+  const backupPath = path.join(path.dirname(DB_PATH), `backup_${Date.now()}.db`);
+  try {
+    await db.backup(backupPath);
+    await ctx.replyWithDocument(
+      { source: backupPath, filename: 'gapmusic.db' },
+      { caption: `📦 بکاپ کامل دیتابیس SQLite | کل آهنگ‌های فعال: ${getActiveSongsCount()}` }
+    );
+  } catch (e) {
+    if (fs.existsSync(DB_PATH)) {
+      await ctx.replyWithDocument(
+        { source: DB_PATH, filename: 'gapmusic.db' },
+        { caption: `📦 فایل دیتابیس SQLite | کل آهنگ‌های فعال: ${getActiveSongsCount()}` }
+      );
+    }
+  } finally {
+    if (fs.existsSync(backupPath)) fs.unlinkSync(backupPath);
+  }
+}
+
 bot.action('admin_export', async (ctx) => {
   if (!isAdmin(ctx.from.id)) return ctx.answerCbQuery();
-  await ctx.answerCbQuery('📦 در حال ارسال فایل...');
-  if (fs.existsSync(DB_FILE)) {
-    await ctx.replyWithDocument(
-      { source: DB_FILE, filename: 'songs_db.json' },
-      { caption: `📦 بکاپ دیتابیس | کل آهنگ‌ها: ${ALL_SONGS.length}` }
-    );
-  }
+  await ctx.answerCbQuery('📦 در حال تهیه بکاپ...');
+  await sendDbBackup(ctx);
+});
+
+bot.command('export_db', async (ctx) => {
+  if (!isAdmin(ctx.from.id)) return;
+  await sendDbBackup(ctx);
 });
 
 bot.action(/^admdel_(\d+)$/, async (ctx) => {
@@ -1039,15 +1164,6 @@ bot.action(/^admdel_(\d+)$/, async (ctx) => {
   if (!removed) return ctx.answerCbQuery('قبلاً حذف شده است.', { show_alert: true });
   await ctx.answerCbQuery(`🗑️ آهنگ #${songId} حذف شد!`, { show_alert: true });
   await ctx.deleteMessage().catch(() => {});
-});
-
-bot.command('export_db', async (ctx) => {
-  if (!isAdmin(ctx.from.id)) return;
-  if (!fs.existsSync(DB_FILE)) return ctx.reply('❌ فایل songs_db.json یافت نشد.');
-  await ctx.replyWithDocument(
-    { source: DB_FILE, filename: 'songs_db.json' },
-    { caption: `📦 فایل دیتابیس | کل آهنگ‌ها: ${ALL_SONGS.length}` }
-  );
 });
 
 bot.action('noop', (ctx) => ctx.answerCbQuery());
@@ -1061,42 +1177,39 @@ bot.action('main_menu', async (ctx) => {
 });
 
 bot.action('list_all', async (ctx) => {
-  const songs = [...getActiveSongs()].reverse();
-  userSessions.set(ctx.from.id, { list: songs.map(s => s.id) });
-  await ctx.editMessageText(`🎵 کل موزیک‌های فعال (${songs.length} ترک):`, buildSongListKeyboard(songs, 0)).catch(() => {});
+  const { total, items } = getSongsPage('all', 0, 120);
+  userSessions.set(ctx.from.id, { list: items.map(s => s.id) });
+  await ctx.editMessageText(`🎵 کل موزیک‌های فعال (${total} ترک | ۱۲۰ ترک اخیر):`, buildSongListKeyboard(items, 0)).catch(() => {});
   await ctx.answerCbQuery();
 });
 
 bot.action('top_songs', async (ctx) => {
-  const songs = [...getActiveSongs()].sort((a, b) => (b.plays - a.plays) || (b.likes - a.likes)).slice(0, 60);
-  userSessions.set(ctx.from.id, { list: songs.map(s => s.id) });
-  await ctx.editMessageText('🔥 پرطرفدارترین موزیک‌ها:', buildSongListKeyboard(songs, 0)).catch(() => {});
+  const { items } = getSongsPage('popular', 0, 60);
+  userSessions.set(ctx.from.id, { list: items.map(s => s.id) });
+  await ctx.editMessageText('🔥 پرطرفدارترین موزیک‌ها:', buildSongListKeyboard(items, 0)).catch(() => {});
   await ctx.answerCbQuery();
 });
 
 bot.action('newest_songs', async (ctx) => {
-  const songs = [...getActiveSongs()].sort((a, b) => b.id - a.id).slice(0, 60);
-  userSessions.set(ctx.from.id, { list: songs.map(s => s.id) });
-  await ctx.editMessageText('🆕 جدیدترین موزیک‌های آرشیو:', buildSongListKeyboard(songs, 0)).catch(() => {});
+  const { items } = getSongsPage('all', 0, 60);
+  userSessions.set(ctx.from.id, { list: items.map(s => s.id) });
+  await ctx.editMessageText('🆕 جدیدترین موزیک‌های آرشیو:', buildSongListKeyboard(items, 0)).catch(() => {});
   await ctx.answerCbQuery();
 });
 
 bot.action('my_favorites', async (ctx) => {
-  const favIds = USERS_DB.users[String(ctx.from.id)]?.favorites || [];
-  if (!favIds.length) {
+  const { items } = getUserFavorites(ctx.from.id);
+  if (!items.length) {
     return ctx.answerCbQuery('پلی‌لیست شما خالی است! زیر آهنگ‌ها روی 🤍 بزنید.', { show_alert: true });
   }
-  const map = new Map(getActiveSongs().map(s => [s.id, s]));
-  const songs = [...favIds].reverse().map(id => map.get(id)).filter(Boolean);
-  userSessions.set(ctx.from.id, { list: songs.map(s => s.id) });
-  await ctx.editMessageText(`❤️ پلی‌لیست شخصی شما (${songs.length} ترک):`, buildSongListKeyboard(songs, 0)).catch(() => {});
+  userSessions.set(ctx.from.id, { list: items.map(s => s.id) });
+  await ctx.editMessageText(`❤️ پلی‌لیست شخصی شما (${items.length} ترک):`, buildSongListKeyboard(items, 0)).catch(() => {});
   await ctx.answerCbQuery();
 });
 
 bot.action('random_song', async (ctx) => {
-  const songs = getActiveSongs();
-  if (!songs.length) return ctx.answerCbQuery('آهنگی یافت نشد', { show_alert: true });
-  const song = songs[Math.floor(Math.random() * songs.length)];
+  const song = getRandomActiveSong();
+  if (!song) return ctx.answerCbQuery('آهنگی یافت نشد', { show_alert: true });
   await ctx.answerCbQuery('🎲 در حال ارسال موزیک شانسی...');
   await sendSongToChat(ctx, ctx.chat.id, song, ctx.from.id);
 });
@@ -1112,7 +1225,7 @@ bot.action('request_song', async (ctx) => {
 
 bot.action(/^dl_(\d+)$/, async (ctx) => {
   const songId = parseInt(ctx.match[1], 10);
-  const song = getActiveSongs().find(s => s.id === songId);
+  const song = getActiveSongByUidOrId(songId);
   if (!song) return ctx.answerCbQuery('موزیک یافت نشد', { show_alert: true });
   await ctx.answerCbQuery('⏳ در حال ارسال...');
   await sendSongToChat(ctx, ctx.chat.id, song, ctx.from.id);
@@ -1145,13 +1258,12 @@ bot.action(/^page_(\d+)$/, async (ctx) => {
   if (!session || !session.list) {
     return ctx.answerCbQuery('نتایج منقضی شده‌اند، دوباره جستجو کنید.', { show_alert: true });
   }
-  const map = new Map(getActiveSongs().map(s => [s.id, s]));
-  const songs = session.list.map(id => map.get(id)).filter(Boolean);
+  const songs = getSongsByIds(session.list);
   await ctx.editMessageReplyMarkup(buildSongListKeyboard(songs, page).reply_markup).catch(() => {});
   await ctx.answerCbQuery();
 });
 
-// دریافت فایل صوتی + اطلاع‌رسانی خودکار به درخواست‌کنندگان قبلی
+// دریافت فایل صوتی و ذخیره مستقیم در SQLite (تریگرها FTS5 را خودکار آپدیت می‌کنند)
 bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
   const msg = ctx.message || ctx.channelPost;
   if (!msg) return next();
@@ -1165,21 +1277,26 @@ bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
   const title = cleanDisplayText(rawTitle);
   const performer = cleanDisplayText(audio.performer || 'نامشخص');
   const normSearch = expandBilingualTerms(`${title} ${performer}`);
+  const fileUniqueId = audio.file_unique_id || '';
+  const mediaType = msg.audio ? 'audio' : 'document';
 
-  const exists = ALL_SONGS.find(s =>
-    (audio.file_unique_id && s.file_unique_id && s.file_unique_id === audio.file_unique_id) ||
-    (normSearch.length > 3 && s.search_text === normSearch)
-  );
+  let exists = null;
+  if (fileUniqueId) {
+    exists = db.prepare('SELECT * FROM songs WHERE file_unique_id = ? LIMIT 1').get(fileUniqueId);
+  }
+  if (!exists && normSearch.length > 3) {
+    exists = db.prepare('SELECT * FROM songs WHERE search_text = ? LIMIT 1').get(normSearch);
+  }
 
   if (exists) {
-    exists.file_id = audio.file_id;
-    exists.file_unique_id = audio.file_unique_id || exists.file_unique_id;
-    exists.from_chat_id = ctx.chat.id;
-    exists.message_id = msg.message_id;
-    exists.available = true;
-    saveSongs();
+    db.prepare(`
+      UPDATE songs
+      SET file_id = ?, file_unique_id = ?, from_chat_id = ?, message_id = ?, media_type = ?, available = 1
+      WHERE id = ?
+    `).run(audio.file_id, fileUniqueId || exists.file_unique_id, String(ctx.chat.id), msg.message_id, mediaType, exists.id);
 
-    notifyFulfilledRequests(exists).catch(() => {});
+    const updated = getSongById(exists.id);
+    notifyFulfilledRequests(updated).catch(() => {});
 
     if (!ctx.channelPost) {
       const dupMsg =
@@ -1192,32 +1309,21 @@ bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
     return;
   }
 
-  const newId = ALL_SONGS.reduce((max, s) => Math.max(max, s.id), 0) + 1;
-  const newSong = {
-    id: newId,
-    uid: `${newId}_${msg.message_id}`,
-    from_chat_id: ctx.chat.id,
-    message_id: msg.message_id,
-    file_id: audio.file_id,
-    file_unique_id: audio.file_unique_id || '',
-    title,
-    performer,
-    search_text: normSearch,
-    media_type: msg.audio ? 'audio' : 'document',
-    plays: 0,
-    likes: 0,
-    available: true
-  };
+  const maxRow = db.prepare('SELECT COALESCE(MAX(id), 0) AS maxId FROM songs').get();
+  const newId = maxRow.maxId + 1;
+  const uid = `${newId}_${msg.message_id}`;
 
-  ALL_SONGS.push(newSong);
-  saveSongs();
+  db.prepare(`
+    INSERT INTO songs (id, uid, from_chat_id, message_id, file_id, file_unique_id, title, performer, search_text, media_type, plays, likes, available)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 1)
+  `).run(newId, uid, String(ctx.chat.id), msg.message_id, audio.file_id, fileUniqueId, title, performer, normSearch, mediaType);
 
-  // اطلاع‌رسانی خودکار در پی‌وی به کاربرانی که این آهنگ را درخواست داده بودند
+  const newSong = getSongById(newId);
   notifyFulfilledRequests(newSong).catch(() => {});
 
   if (!ctx.channelPost) {
     const confirmMsg =
-      `✅ موزیک با موفقیت در دیتابیس ذخیره شد!\n\n` +
+      `✅ موزیک با موفقیت در دیتابیس SQLite ذخیره شد!\n\n` +
       `🎵 خواننده: ${performer}\n` +
       `🎧 نام آهنگ: ${title}\n` +
       `📌 کد ثبت شده: ${newId}`;
@@ -1245,7 +1351,7 @@ bot.on('text', async (ctx) => {
     return;
   }
 
-  const results = smartSearchSongs(query, getActiveSongs());
+  const results = smartSearchSongs(query, { limit: 100 });
 
   if (!results.length) {
     userSessions.set(ctx.from.id, { pendingQuery: query });
@@ -1277,15 +1383,20 @@ bot.action('quick_request_pending', async (ctx) => {
 
 bot.on('inline_query', async (ctx) => {
   const rawQ = (ctx.inlineQuery.query || '').trim();
-  let songs = getActiveSongs().filter(s => s.media_type === 'audio' && s.file_id);
+  let songs = [];
 
   if (rawQ && rawQ !== '.') {
-    songs = smartSearchSongs(rawQ, songs);
+    songs = smartSearchSongs(rawQ, { onlyWithFileId: true, limit: 25 });
   } else {
-    songs = [...songs].reverse();
+    songs = db.prepare(`
+      SELECT * FROM songs
+      WHERE available = 1 AND COALESCE(TRIM(file_id), '') != ''
+      ORDER BY id DESC
+      LIMIT 25
+    `).all();
   }
 
-  const results = songs.slice(0, 25).map(s => ({
+  const results = songs.map(s => ({
     type: 'audio',
     id: String(s.id),
     audio_file_id: s.file_id,
@@ -1320,5 +1431,5 @@ app.listen(PORT, async () => {
     .catch((err) => console.error('⚠️ خطا در اتصال ربات:', err.message));
 });
 
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+process.once('SIGINT', () => { bot.stop('SIGINT'); db.close(); });
+process.once('SIGTERM', () => { bot.stop('SIGTERM'); db.close(); });
