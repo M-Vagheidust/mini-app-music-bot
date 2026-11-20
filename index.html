@@ -3,256 +3,2124 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>GapMusic Player</title>
+  <title>GapMusic • Telegram Mini App</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    if (window.Telegram && window.Telegram.WebApp) {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+    }
+  </script>
   <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0f1117;
-      --card: #181b24;
-      --card-hover: #202430;
-      --primary: #1db954;
-      --primary-glow: rgba(29, 185, 84, 0.25);
-      --text: #f3f4f6;
-      --muted: #9ca3af;
-      --border: rgba(255, 255, 255, 0.08);
+      --bg: #0b1118;
+      --bg-deep: #070b10;
+      --surface: rgba(24, 34, 46, 0.72);
+      --glass: rgba(255, 255, 255, 0.07);
+      --glass-strong: rgba(255, 255, 255, 0.13);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --tg-blue: #38a3f1;
+      --tg-blue-glow: rgba(56, 163, 241, 0.38);
+      --tg-blue-soft: rgba(56, 163, 241, 0.16);
+      --danger: #ff4d6d;
+      --text: #ffffff;
+      --subtext: #94a3b8;
+      --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
     }
-    * { box-sizing: border-box; font-family: 'Vazirmatn', sans-serif; -webkit-tap-highlight-color: transparent; }
+
+    * {
+      box-sizing: border-box;
+      font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      max-width: 100vw;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
-      margin: 0; padding: 0 0 130px 0;
-      background: var(--bg); color: var(--text);
+      padding-bottom: 148px;
+      background:
+        radial-gradient(circle at 18% 0%, rgba(56, 163, 241, 0.18) 0%, rgba(15, 23, 34, 0.92) 45%, var(--bg-deep) 100%);
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .app-header, button, .quick-action-box, .nav-item, .svg-btn, .track-cover, .mp-art, .fp-artwork {
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    input, textarea {
+      user-select: text !important;
+      -webkit-user-select: text !important;
+    }
+
+    /* Header */
+    .app-header {
+      padding: 12px 14px 10px;
+      position: sticky;
+      top: 0;
+      z-index: 25;
+      background: rgba(11, 17, 24, 0.82);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .brand-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      flex-shrink: 0;
+    }
+
+    .wave-icon {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .wave-icon span {
+      width: 2.5px;
+      background: var(--tg-blue);
+      border-radius: 3px;
+      box-shadow: 0 0 8px var(--tg-blue-glow);
+    }
+    .wave-icon span:nth-child(1) { height: 9px; }
+    .wave-icon span:nth-child(2) { height: 16px; }
+    .wave-icon span:nth-child(3) { height: 20px; }
+    .wave-icon span:nth-child(4) { height: 13px; }
+    .wave-icon span:nth-child(5) { height: 8px; }
+
+    .brand-titles { display: flex; flex-direction: column; line-height: 1.15; }
+    .brand-name-row { display: flex; align-items: center; gap: 4px; }
+    .brand-name { font-size: 14.5px; font-weight: 900; letter-spacing: 0.2px; white-space: nowrap; }
+    .brand-name b { color: var(--tg-blue); }
+    .verified-badge {
+      width: 14px;
+      height: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--tg-blue);
+      flex-shrink: 0;
+    }
+    .brand-sub { font-size: 9px; color: var(--subtext); letter-spacing: 0.4px; }
+
+    .header-right-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      justify-content: flex-end;
+    }
+
+    .header-req-btn {
+      background: var(--tg-blue-soft);
+      border: 1px solid rgba(56, 163, 241, 0.42);
+      color: #ffffff;
+      border-radius: 500px;
+      height: 34px;
+      padding: 0 10px;
+      font-size: 11px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      cursor: pointer;
+      flex-shrink: 0;
+      backdrop-filter: blur(10px);
+      transition: transform 0.2s var(--ease-spring), background 0.2s ease;
+    }
+    .header-req-btn:active {
+      transform: scale(0.93);
+      background: rgba(56, 163, 241, 0.28);
+    }
+
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: 500px;
+      padding: 2px 8px 2px 3px;
+      max-width: 118px;
+      min-width: 0;
+    }
+
+    .user-name-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #f1f5f9;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-avatar-circle {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--tg-blue), #1b4f7a);
+      border: 1.5px solid rgba(56, 163, 241, 0.75);
+      box-shadow: 0 0 10px var(--tg-blue-glow);
+      overflow: hidden;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .user-avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+
+    .search-bar-row { display: flex; align-items: center; gap: 8px; }
+
+    .sp-search-bar {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--glass-border);
+      border-radius: 500px;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      height: 38px;
+      gap: 8px;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .sp-search-bar:focus-within {
+      border-color: var(--tg-blue);
+      box-shadow: 0 0 0 2px rgba(56, 163, 241, 0.18);
+    }
+
+    .sp-search-bar input {
+      border: none;
+      outline: none;
+      background: transparent;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+      width: 100%;
+      height: 100%;
+    }
+    .sp-search-bar input::placeholder { color: #8b9bb0; }
+
+    .admin-mini-btn {
+      background: rgba(255, 77, 109, 0.16);
+      border: 1px solid rgba(255, 77, 109, 0.55);
+      color: #fff;
+      border-radius: 500px;
+      height: 38px;
+      padding: 0 12px;
+      font-size: 11.5px;
+      font-weight: 800;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* Request Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 150;
+      background: rgba(6, 10, 15, 0.78);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.28s ease;
+    }
+    .modal-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 390px;
+      background: linear-gradient(160deg, rgba(28, 39, 53, 0.96) 0%, rgba(14, 21, 30, 0.98) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 26px;
+      padding: 22px 20px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 32px rgba(56, 163, 241, 0.12);
+      transform: translateY(20px) scale(0.96);
+      transition: transform 0.35s var(--ease-spring);
+    }
+    .modal-backdrop.open .modal-card {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .modal-title {
+      font-size: 15.5px;
+      font-weight: 900;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      color: #cbd5e1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .modal-desc {
+      font-size: 12px;
+      color: var(--subtext);
+      line-height: 1.65;
+      margin-bottom: 14px;
+    }
+
+    .modal-input {
+      width: 100%;
+      height: 46px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 0 14px;
+      color: #ffffff;
+      font-size: 13.5px;
+      font-weight: 600;
+      outline: none;
+      margin-bottom: 14px;
+      transition: border-color 0.25s ease;
+    }
+    .modal-input:focus {
+      border-color: var(--tg-blue);
+      box-shadow: 0 0 0 3px rgba(56, 163, 241, 0.2);
+    }
+
+    .modal-actions { display: flex; gap: 10px; }
+
+    .modal-submit-btn {
+      flex: 1;
+      height: 44px;
+      border-radius: 500px;
+      background: var(--tg-blue);
+      color: #ffffff;
+      border: none;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 6px 20px var(--tg-blue-glow);
+      transition: transform 0.2s var(--ease-spring);
+    }
+    .modal-submit-btn:active { transform: scale(0.96); }
+    .modal-submit-btn:disabled { opacity: 0.6; cursor: default; }
+
+    .modal-cancel-btn {
+      height: 44px;
+      padding: 0 16px;
+      border-radius: 500px;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      color: #cbd5e1;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Hero Banner - Frosted Glass Card */
+    .hero-banner {
+      margin: 12px 14px;
+      border-radius: 22px;
+      padding: 16px 18px;
+      background: linear-gradient(135deg, rgba(44, 66, 88, 0.55) 0%, rgba(20, 31, 45, 0.72) 55%, rgba(16, 46, 74, 0.68) 100%);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 16px 38px rgba(0, 0, 0, 0.45);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .hero-content { z-index: 2; flex: 1; min-width: 0; }
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #e2e8f0;
+      background: rgba(255, 255, 255, 0.11);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 4px 11px;
+      border-radius: 500px;
+      margin-bottom: 8px;
+    }
+    .hero-title { font-size: 18px; font-weight: 900; margin: 0 0 4px 0; line-height: 1.25; }
+    .hero-title span { color: var(--tg-blue); }
+    .hero-desc { font-size: 11.5px; color: #cbd5e1; margin-bottom: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .play-now-pill {
+      background: rgba(255, 255, 255, 0.95);
+      color: #0b1118;
+      border: none;
+      border-radius: 500px;
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+      transition: transform 0.2s var(--ease-spring);
+    }
+    .play-now-pill:active { transform: scale(0.95); }
+
+    /* Quick Filter Boxes */
+    .quick-boxes-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding: 2px 14px 12px;
+    }
+
+    .quick-action-box {
+      background: var(--glass);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 12px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.25s var(--ease-spring);
+    }
+    .quick-action-box.active {
+      background: linear-gradient(180deg, rgba(56, 163, 241, 0.24), rgba(20, 32, 46, 0.88));
+      border-color: rgba(56, 163, 241, 0.6);
+      box-shadow: 0 6px 18px rgba(56, 163, 241, 0.16);
+    }
+    .qab-icon { color: #e2e8f0; display: flex; align-items: center; justify-content: center; }
+    .quick-action-box.active .qab-icon { color: var(--tg-blue); }
+    .qab-label { font-size: 10.5px; font-weight: 700; color: #e5e7eb; white-space: nowrap; text-align: center; }
+
+    /* Admin Bar */
+    .admin-bar {
+      margin: 4px 14px 10px;
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: rgba(255, 77, 109, 0.14);
+      border: 1px solid rgba(255, 77, 109, 0.45);
+      display: none;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .admin-bar.visible { display: flex; }
+
+    .section-heading {
+      padding: 4px 16px 8px;
+      font-size: 15px;
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .section-heading span { font-size: 11.5px; color: var(--tg-blue); font-weight: 700; }
+
+    /* Track Rows */
+    .track-list { padding: 0 12px; display: flex; flex-direction: column; gap: 6px; }
+
+    .track-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      transition: transform 0.25s var(--ease-spring), background 0.25s ease, border-color 0.25s ease;
+    }
+    .track-row.active {
+      background: linear-gradient(90deg, rgba(56, 163, 241, 0.18), rgba(24, 35, 48, 0.85));
+      border-color: rgba(56, 163, 241, 0.45);
+    }
+
+    .track-cover {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 17px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    }
+    .track-cover img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+
+    .track-meta { flex: 1; min-width: 0; cursor: pointer; }
+    .track-title { font-size: 13.5px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .track-row.active .track-title { color: var(--tg-blue); }
+    .track-artist { font-size: 11.5px; color: var(--subtext); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .track-actions { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
+
+    .svg-btn {
+      width: 34px;
+      height: 34px;
+      border: none;
+      background: transparent;
+      color: var(--subtext);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.18s ease, background 0.18s ease;
+    }
+    .svg-btn:active { transform: scale(0.9); }
+    .svg-btn.liked { color: #ff4d6d; }
+    .svg-btn.del-btn { color: #ff4d6d; background: rgba(255, 77, 109, 0.14); }
+
+    .eq-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 13px; margin-left: 6px; }
+    .eq-bars span { width: 2.5px; background: var(--tg-blue); border-radius: 2px; animation: eqBounce 0.7s ease-in-out infinite alternate; }
+    .eq-bars span:nth-child(2) { animation-delay: 0.2s; }
+    .eq-bars span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes eqBounce { 0% { height: 4px; } 100% { height: 13px; } }
+
+    .load-more {
+      margin: 14px;
+      padding: 12px;
+      border-radius: 500px;
+      background: var(--tg-blue-soft);
+      border: 1px solid rgba(56, 163, 241, 0.4);
+      color: #fff;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      width: calc(100% - 28px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Request Box when no song found */
+    .not-found-card {
+      margin: 18px 4px;
+      padding: 26px 18px;
+      border-radius: 22px;
+      background: var(--surface);
+      backdrop-filter: blur(18px);
+      border: 1px solid var(--glass-border);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .not-found-title { font-size: 14.5px; font-weight: 800; color: #fff; }
+    .not-found-sub { font-size: 12px; color: var(--subtext); line-height: 1.6; max-width: 280px; }
+    .request-admin-btn {
+      background: var(--tg-blue);
+      color: #ffffff;
+      border: none;
+      border-radius: 500px;
+      padding: 11px 22px;
+      font-size: 13px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px var(--tg-blue-glow);
+      transition: transform 0.2s var(--ease-spring);
+    }
+    .request-admin-btn:active { transform: scale(0.95); }
+
+    /* Floating Glass Mini Player */
+    .sp-mini-player {
+      position: fixed;
+      bottom: 68px;
+      left: 10px;
+      right: 10px;
+      height: 62px;
+      background: rgba(24, 34, 46, 0.86);
+      backdrop-filter: blur(26px);
+      -webkit-backdrop-filter: blur(26px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 18px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 40;
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.65);
+      overflow: hidden;
+      transform: translateY(150%);
+      opacity: 0;
+      transition: transform 0.45s var(--ease-spring), opacity 0.35s ease;
+    }
+    .sp-mini-player.visible { transform: translateY(0); opacity: 1; }
+
+    .mp-progress-line { position: absolute; bottom: 0; left: 0; right: 0; height: 2.5px; background: rgba(255, 255, 255, 0.12); direction: ltr; }
+    .mp-progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--tg-blue), #ffffff); }
+
+    .mp-art {
+      width: 44px;
+      height: 44px;
+      border-radius: 11px;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .mp-art img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+    .mp-info { flex: 1; min-width: 0; cursor: pointer; }
+    .mp-title { font-size: 13px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mp-artist { font-size: 11px; color: var(--tg-blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Bottom Navigation - Telegram Glass Bar */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 62px;
+      background: rgba(11, 17, 24, 0.92);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 45;
+      border-top: 1px solid var(--glass-border);
+      padding: 0 6px;
+    }
+
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      color: var(--subtext);
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      height: 100%;
+      transition: color 0.2s ease;
+    }
+    .nav-item.active { color: var(--tg-blue); font-weight: 800; }
+
+    .nav-center-btn {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, var(--tg-blue), #1e7fc7);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 20px var(--tg-blue-glow);
+      margin-top: -10px;
+      border: 2px solid #0b1118;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.2s var(--ease-spring);
+    }
+    .nav-center-btn:active { transform: scale(0.92); }
+
+    /* =================================================================
+       FULL-SCREEN GLASS TELEGRAM MUSIC PLAYER (MATCHING MOCKUP)
+       ================================================================= */
+    .full-player {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: #0d141d;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 12px 20px 22px;
+      transform: translateY(100%);
+      transition: transform 0.45s var(--ease-spring);
+      overflow-y: auto;
       overflow-x: hidden;
     }
-    header {
-      position: sticky; top: 0; z-index: 20;
-      background: rgba(15, 17, 23, 0.92);
-      backdrop-filter: blur(12px);
-      padding: 14px 16px 10px;
-      border-bottom: 1px solid var(--border);
-    }
-    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .brand { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
-    .brand span { color: var(--primary); }
-    .random-btn {
-      background: var(--card); border: 1px solid var(--border); color: var(--text);
-      padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer;
-    }
-    .search-box {
-      width: 100%; background: var(--card); border: 1px solid var(--border);
-      color: var(--text); padding: 10px 14px; border-radius: 12px; font-size: 14px; outline: none;
-    }
-    .search-box:focus { border-color: var(--primary); }
-    .tabs { display: flex; gap: 8px; margin-top: 10px; }
-    .tab {
-      flex: 1; text-align: center; padding: 7px; border-radius: 10px;
-      background: var(--card); color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer;
-      border: 1px solid transparent;
-    }
-    .tab.active { background: var(--primary-glow); color: var(--primary); border-color: var(--primary); }
+    .full-player.open { transform: translateY(0); }
 
-    .song-list { padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; }
-    .song-card {
-      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
-      padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
-      transition: 0.2s;
+    /* Dynamic blurred ambient backdrop */
+    .fp-ambient-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 25%, rgba(65, 108, 128, 0.45) 0%, #0d141d 68%, #080d13 100%);
     }
-    .song-card.playing { border-color: var(--primary); background: rgba(29, 185, 84, 0.08); }
-    .song-info { flex: 1; min-width: 0; cursor: pointer; }
-    .song-title { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .song-artist { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .actions { display: flex; align-items: center; gap: 6px; }
-    .icon-btn {
-      width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border);
-      background: rgba(255,255,255,0.04); color: var(--text); display: flex; align-items: center; justify-content: center;
-      cursor: pointer; font-size: 15px;
+    .fp-ambient-bg img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: blur(55px) saturate(1.45) brightness(0.45);
+      transform: scale(1.28);
+      opacity: 0;
+      transition: opacity 0.6s ease;
     }
-    .icon-btn.play { background: var(--primary); color: #000; border: none; font-weight: bold; }
+    .fp-ambient-bg img.loaded { opacity: 0.92; }
+    .fp-ambient-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(13, 20, 29, 0.55) 0%, rgba(13, 20, 29, 0.35) 38%, rgba(10, 16, 24, 0.86) 80%, rgba(8, 12, 18, 0.96) 100%);
+    }
 
-    /* Player Bar */
-    .player-bar {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
-      background: rgba(22, 26, 35, 0.96); backdrop-filter: blur(16px);
-      border-top: 1px solid var(--border); padding: 10px 16px 14px;
-      display: none; flex-direction: column; gap: 8px;
+    .fp-inner {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 100%;
+      gap: 12px;
     }
-    .player-bar.visible { display: flex; }
-    .player-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-    .player-meta { flex: 1; min-width: 0; }
-    .player-title { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .player-artist { font-size: 11px; color: var(--primary); }
-    .player-controls { display: flex; align-items: center; gap: 10px; }
-    .ctrl-btn {
-      background: none; border: none; color: var(--text); font-size: 18px; cursor: pointer; padding: 4px;
+
+    /* Top Telegram-style header inside player */
+    .fp-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      direction: ltr;
     }
-    .ctrl-btn.main {
-      width: 38px; height: 38px; border-radius: 50%; background: var(--primary); color: #000;
-      display: flex; align-items: center; justify-content: center; font-size: 16px;
+
+    .fp-top-text-btn {
+      background: transparent;
+      border: none;
+      color: #e2e8f0;
+      font-size: 13.5px;
+      font-weight: 600;
+      padding: 6px 4px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
-    .progress-wrap { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
-    input[type="range"] { flex: 1; accent-color: var(--primary); height: 4px; }
-    .empty-msg { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 14px; }
+
+    .fp-header-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+    }
+    .fp-header-brand-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .fp-header-brand { font-size: 15px; font-weight: 800; color: #ffffff; }
+    .fp-header-sub { font-size: 10.5px; font-weight: 500; color: rgba(255, 255, 255, 0.6); }
+
+    .fp-top-circle-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    /* Play & Share Pill */
+    .fp-pill-wrap {
+      display: flex;
+      justify-content: center;
+    }
+    .fp-play-share-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: 500px;
+      background: rgba(255, 255, 255, 0.13);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      font-size: 11.5px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    /* Large Rounded Glass Artwork */
+    .fp-artwork-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 2px auto;
+    }
+
+    .fp-artwork {
+      width: min(295px, 78vw);
+      height: min(295px, 78vw);
+      border-radius: 22px;
+      box-shadow: 0 24px 55px rgba(0, 0, 0, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 68px;
+      font-weight: 900;
+      transition: transform 0.45s var(--ease-spring), box-shadow 0.45s ease;
+    }
+    .fp-artwork.playing-scale {
+      transform: scale(1.025);
+      box-shadow: 0 28px 65px rgba(0, 0, 0, 0.75);
+    }
+    .fp-artwork img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+
+    /* Track Info + Action Pills (Wave / Heart / Share) */
+    .fp-details {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      direction: ltr;
+      margin-top: 4px;
+    }
+    .fp-titles {
+      flex: 1;
+      min-width: 0;
+      text-align: left;
+    }
+    .fp-title {
+      font-size: 20px;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #ffffff;
+      line-height: 1.25;
+    }
+    .fp-artist-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 3px;
+    }
+    .fp-artist {
+      font-size: 13.5px;
+      color: rgba(255, 255, 255, 0.68);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .fp-inline-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .fp-live-wave {
+      display: inline-flex;
+      align-items: center;
+      gap: 2.5px;
+      height: 22px;
+      padding: 0 4px;
+    }
+    .fp-live-wave span {
+      width: 2.5px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.85);
+      height: 6px;
+      transition: height 0.2s ease;
+    }
+    .fp-live-wave.animating span { animation: fpWavePulse 0.75s ease-in-out infinite alternate; }
+    .fp-live-wave span:nth-child(1) { height: 7px; animation-delay: 0s; }
+    .fp-live-wave span:nth-child(2) { height: 13px; animation-delay: 0.15s; }
+    .fp-live-wave span:nth-child(3) { height: 19px; animation-delay: 0.3s; }
+    .fp-live-wave span:nth-child(4) { height: 12px; animation-delay: 0.45s; }
+    .fp-live-wave span:nth-child(5) { height: 7px; animation-delay: 0.6s; }
+    @keyframes fpWavePulse {
+      0% { height: 5px; opacity: 0.55; }
+      100% { height: 20px; opacity: 1; }
+    }
+
+    .fp-glass-icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.18s ease, background 0.18s ease;
+    }
+    .fp-glass-icon-btn:active { transform: scale(0.9); }
+    .fp-glass-icon-btn.tg-accent {
+      color: var(--tg-blue);
+      background: rgba(56, 163, 241, 0.14);
+      border-color: rgba(56, 163, 241, 0.32);
+    }
+
+    /* Hybrid Waveform + Scrubber Timeline (Like Mockup) */
+    .fp-wave-section {
+      margin: 6px 0 4px;
+      direction: ltr;
+    }
+
+    .waveform-track-wrap {
+      position: relative;
+      width: 100%;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      touch-action: none;
+    }
+
+    .waveform-container {
+      width: 100%;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2.5px;
+      pointer-events: none;
+    }
+
+    .wave-bar {
+      flex: 1;
+      min-width: 2px;
+      max-width: 3.5px;
+      height: 30%;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.22);
+      transition: background-color 0.15s ease, height 0.09s linear;
+    }
+    .wave-bar.played {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .wave-played-line {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 5px;
+      width: 0%;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.35);
+      pointer-events: none;
+    }
+
+    .wave-thumb {
+      position: absolute;
+      left: 0%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.55), 0 0 10px rgba(255, 255, 255, 0.45);
+      pointer-events: none;
+    }
+
+    .fp-times {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.62);
+      margin-top: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Playback Controls (Repeat - Prev - Glass Play - Next - Shuffle) */
+    .fp-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      direction: ltr;
+      padding: 4px 6px;
+    }
+
+    .fp-side-ctrl {
+      width: 40px;
+      height: 40px;
+      border: none;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.55);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border-radius: 50%;
+      transition: color 0.2s ease, transform 0.18s ease;
+    }
+    .fp-side-ctrl.active-blue { color: var(--tg-blue); }
+    .fp-side-ctrl:active { transform: scale(0.88); }
+
+    .fp-skip-ctrl {
+      width: 46px;
+      height: 46px;
+      border: none;
+      background: transparent;
+      color: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border-radius: 50%;
+      transition: transform 0.18s var(--ease-spring);
+    }
+    .fp-skip-ctrl:active { transform: scale(0.88); }
+
+    .fp-play-circle {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.16);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1.5px solid rgba(255, 255, 255, 0.28);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+      transition: transform 0.2s var(--ease-spring), background 0.2s ease;
+    }
+    .fp-play-circle:active { transform: scale(0.92); background: rgba(255, 255, 255, 0.24); }
+
+    /* Volume Slider Row (Like Mockup) */
+    .fp-volume-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      direction: ltr;
+      padding: 2px 4px;
+    }
+
+    .vol-icon-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.6);
+      padding: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .vol-range-wrap {
+      flex: 1;
+      position: relative;
+      height: 24px;
+      display: flex;
+      align-items: center;
+    }
+
+    .vol-track {
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.2);
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .vol-fill {
+      height: 100%;
+      width: 78%;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 999px;
+    }
+
+    .vol-slider-input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      margin: 0;
+      opacity: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    .vol-slider-input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+    }
+    .vol-slider-input::-moz-range-thumb {
+      width: 15px;
+      height: 15px;
+      border: none;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+    }
+
+    /* Share to Chat Glass CTA + Status Pill */
+    .fp-bottom-cta {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .fp-share-chat-btn {
+      width: 100%;
+      height: 46px;
+      border-radius: 14px;
+      background: rgba(56, 163, 241, 0.16);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(56, 163, 241, 0.34);
+      color: var(--tg-blue);
+      font-size: 13.5px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: transform 0.2s var(--ease-spring), background 0.2s ease;
+    }
+    .fp-share-chat-btn:active {
+      transform: scale(0.97);
+      background: rgba(56, 163, 241, 0.26);
+    }
+
+    .fp-listening-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.72);
+    }
+
+    .toast {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-90px);
+      background: rgba(17, 26, 37, 0.96);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 163, 241, 0.55);
+      color: #ffffff;
+      padding: 10px 16px;
+      border-radius: 14px;
+      font-size: 12px;
+      font-weight: 700;
+      z-index: 200;
+      transition: transform 0.35s var(--ease-spring);
+      max-width: 90vw;
+      text-align: center;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .empty-box { text-align: center; color: var(--subtext); padding: 40px 20px; font-size: 13.5px; }
   </style>
 </head>
 <body>
-  <header>
-    <div class="top-bar">
-      <div class="brand">🎧 <span>GapMusic</span></div>
-      <button class="random-btn" onclick="playRandom()">🎲 موزیک شانسی</button>
+
+  <div id="toast" class="toast"></div>
+
+  <!-- Request Song Modal -->
+  <div class="modal-backdrop" id="requestModal" onclick="if(event.target === this) closeRequestModal()">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">📩 درخواست آهنگ جدید</div>
+        <button class="modal-close-btn" onclick="closeRequestModal()">✕</button>
+      </div>
+      <div class="modal-desc">
+        نام آهنگ و خواننده مورد نظرت رو بنویس تا برای ادمین ارسال بشه. به محض اضافه شدن به آرشیو، توی پی‌وی بهت خبر میدیم!
+      </div>
+      <input
+        type="text"
+        id="modalRequestInput"
+        class="modal-input"
+        placeholder="مثلاً: یاس - سرکوب یا Behzad Leito - 404"
+        onkeydown="if(event.key === 'Enter') submitModalRequest()"
+      />
+      <div class="modal-actions">
+        <button class="modal-submit-btn" id="modalSubmitBtn" onclick="submitModalRequest()">
+          ارسال درخواست به ادمین
+        </button>
+        <button class="modal-cancel-btn" onclick="closeRequestModal()">انصراف</button>
+      </div>
     </div>
-    <input type="text" id="searchInput" class="search-box" placeholder="🔍 جستجوی نام آهنگ یا خواننده..." oninput="onSearch()" />
-    <div class="tabs">
-      <div class="tab active" id="tabAll" onclick="switchTab('all')">🎵 همه آهنگ‌ها</div>
-      <div class="tab" id="tabFav" onclick="switchTab('fav')">❤️ پلی‌لیست من</div>
+  </div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-top">
+      <div class="brand-box">
+        <div class="wave-icon"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="brand-titles">
+          <div class="brand-name-row">
+            <div class="brand-name">GAP<b>MUSIC</b></div>
+            <span class="verified-badge" title="Telegram Mini App">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.39 1.98 3.09-.33 1.24 2.86 2.86 1.24-.33 3.09L23.23 13l-1.98 2.39.33 3.09-2.86 1.24-1.24 2.86-3.09-.33L12 24l-2.39-1.98-3.09.33-1.24-2.86-2.86-1.24.33-3.09L.77 13l1.98-2.39-.33-3.09 2.86-1.24 1.24-2.86 3.09.33L12 2zm-1.2 14.2l5.8-5.8-1.4-1.4-4.4 4.4-2.2-2.2-1.4 1.4 3.6 3.6z"/></svg>
+            </span>
+          </div>
+          <div class="brand-sub">Telegram Mini App</div>
+        </div>
+      </div>
+
+      <div class="header-right-group">
+        <button class="header-req-btn" onclick="openRequestModal()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          آهنگ درخواستی
+        </button>
+
+        <div class="user-pill">
+          <span class="user-name-label" id="tgUserName">کاربر</span>
+          <div class="user-avatar-circle" id="tgUserAvatar">G</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="search-bar-row">
+      <div class="sp-search-bar">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="#94a3b8"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input type="text" id="searchInput" placeholder="جستجوی فارسی یا انگلیسی آهنگ، خواننده..." oninput="onSearch()" autocomplete="off" inputmode="search" />
+      </div>
+      <button class="admin-mini-btn" id="adminToggleBtn" onclick="toggleAdminMode()">🛡️ ادمین</button>
     </div>
   </header>
 
-  <div id="songList" class="song-list">
-    <div class="empty-msg">در حال بارگذاری موزیک‌ها...</div>
+  <!-- Hero Banner -->
+  <section class="hero-banner">
+    <div class="hero-content">
+      <div class="hero-tag">🎵 Play & Share • آرشیو آنلاین</div>
+      <h2 class="hero-title">GapMusic <span>Player</span></h2>
+      <div class="hero-desc">پخش آنلاین با کیفیت بالا و ارسال مستقیم در چت تلگرام</div>
+      <button class="play-now-pill" onclick="playRandom()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        پخش شانسی
+      </button>
+    </div>
+  </section>
+
+  <!-- Quick Category Boxes -->
+  <div class="quick-boxes-grid">
+    <div class="quick-action-box active" id="boxAll" onclick="setFilter('all')">
+      <div class="qab-icon">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      </div>
+      <div class="qab-label">کل آرشیو</div>
+    </div>
+    <div class="quick-action-box" id="boxFav" onclick="setFilter('fav')">
+      <div class="qab-icon">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </div>
+      <div class="qab-label">لایک‌شده‌ها</div>
+    </div>
+    <div class="quick-action-box" id="boxPopular" onclick="setFilter('popular')">
+      <div class="qab-icon">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      </div>
+      <div class="qab-label">برترین‌ها</div>
+    </div>
+    <div class="quick-action-box" onclick="playRandom()">
+      <div class="qab-icon">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+      </div>
+      <div class="qab-label">پخش شانسی</div>
+    </div>
   </div>
 
-  <div id="playerBar" class="player-bar">
-    <div class="player-top">
-      <div class="player-meta">
-        <div class="player-title" id="pTitle">انتخاب آهنگ</div>
-        <div class="player-artist" id="pArtist">GapMusic</div>
-      </div>
-      <div class="player-controls">
-        <button class="ctrl-btn" onclick="playPrev()" title="قبلی">⏮</button>
-        <button class="ctrl-btn main" id="playPauseBtn" onclick="togglePlay()">▶</button>
-        <button class="ctrl-btn" onclick="playNext()" title="بعدی">⏭</button>
-      </div>
+  <!-- Admin Bar -->
+  <div class="admin-bar" id="adminBar">
+    <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:800;">
+      <span>🛡️ پنل مدیریت فعال شد</span>
+      <span id="adminUsersCount"></span>
     </div>
-    <div class="progress-wrap">
-      <span id="curTime">0:00</span>
-      <input type="range" id="seekBar" value="0" min="0" max="100" oninput="seekAudio()" />
-      <span id="durTime">0:00</span>
+    <div style="font-size:11px; color:#d1d5db;">دکمه حذف 🗑️ کنار تمام آهنگ‌ها برای شما نمایش داده می‌شود.</div>
+  </div>
+
+  <div class="section-heading">
+    <div id="sectionTitle">جدیدترین موزیک‌ها</div>
+    <span id="archiveStats">در حال بارگذاری...</span>
+  </div>
+
+  <div class="track-list" id="trackList"></div>
+  <button class="load-more" id="loadMoreBtn" style="display:none;" onclick="loadMore()">نمایش موزیک‌های بیشتر</button>
+
+  <!-- Floating Glass Mini Player -->
+  <div class="sp-mini-player" id="miniPlayer">
+    <div class="mp-art" id="mpArt" onclick="openFullPlayer()">🎵</div>
+    <div class="mp-info" onclick="openFullPlayer()">
+      <div class="mp-title" id="mpTitle">انتخاب موزیک</div>
+      <div class="mp-artist" id="mpArtist">GapMusic</div>
+    </div>
+    <button class="svg-btn" id="mpFavBtn" onclick="toggleCurrentFav()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+    </button>
+    <button class="svg-btn" style="color:#fff;" id="mpPlayBtn" onclick="togglePlay()">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <div class="mp-progress-line"><div class="mp-progress-fill" id="mpLineFill"></div></div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" id="navHome" onclick="switchNav('home')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span>خانه</span>
+    </div>
+    <div class="nav-item" id="navSearch" onclick="switchNav('search')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      <span>جستجو</span>
+    </div>
+    <div class="nav-center-btn" onclick="openFullPlayer()" title="پخش‌کننده">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 4v16M8 8v8M16 8v8M4 11v2M20 11v2" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round"/></svg>
+    </div>
+    <div class="nav-item" id="navLib" onclick="switchNav('lib')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      <span>پلی‌لیست</span>
+    </div>
+    <div class="nav-item" id="navPopular" onclick="switchNav('popular')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
+      <span>برترین‌ها</span>
+    </div>
+  </nav>
+
+  <!-- Full-Screen Telegram Glass Music Player -->
+  <div class="full-player" id="fullPlayer">
+    <div class="fp-ambient-bg">
+      <img id="fpAmbientImg" alt="" />
+      <div class="fp-ambient-overlay"></div>
+    </div>
+
+    <div class="fp-inner">
+      <!-- Top Bar -->
+      <div class="fp-top">
+        <button class="fp-top-text-btn" onclick="closeFullPlayer()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+          بستن
+        </button>
+        <div class="fp-header-center">
+          <div class="fp-header-brand-row">
+            <span class="fp-header-brand">GapMusic</span>
+            <span class="verified-badge">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.39 1.98 3.09-.33 1.24 2.86 2.86 1.24-.33 3.09L23.23 13l-1.98 2.39.33 3.09-2.86 1.24-1.24 2.86-3.09-.33L12 24l-2.39-1.98-3.09.33-1.24-2.86-2.86-1.24.33-3.09L.77 13l1.98-2.39-.33-3.09 2.86-1.24 1.24-2.86 3.09.33L12 2zm-1.2 14.2l5.8-5.8-1.4-1.4-4.4 4.4-2.2-2.2-1.4 1.4 3.6 3.6z"/></svg>
+            </span>
+          </div>
+          <span class="fp-header-sub">Telegram Mini App</span>
+        </div>
+        <button class="fp-top-circle-btn" onclick="openRequestModal()" title="درخواست آهنگ">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="18" cy="12" r="1.8"/></svg>
+        </button>
+      </div>
+
+      <!-- Play & Share Pill -->
+      <div class="fp-pill-wrap">
+        <div class="fp-play-share-pill">
+          <span>🎵</span>
+          <span>Play &amp; Share</span>
+        </div>
+      </div>
+
+      <!-- Large Cover Art -->
+      <div class="fp-artwork-wrap">
+        <div class="fp-artwork" id="fpArt">🎵</div>
+      </div>
+
+      <!-- Lower Controls Stack -->
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <!-- Title + Inline Wave / Heart / Share -->
+        <div class="fp-details">
+          <div class="fp-titles">
+            <div class="fp-title" id="fpTitle">عنوان آهنگ</div>
+            <div class="fp-artist-row">
+              <div class="fp-artist" id="fpArtist">نام خواننده</div>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="rgba(255,255,255,0.55)" style="flex-shrink:0;"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+            </div>
+          </div>
+
+          <div class="fp-inline-actions">
+            <div class="fp-live-wave" id="fpLiveWave">
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <button class="fp-glass-icon-btn" id="fpFavBtn" onclick="toggleCurrentFav()" title="لایک">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </button>
+            <button class="fp-glass-icon-btn tg-accent" onclick="sendCurrentToChat()" title="ارسال به پی‌وی">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Hybrid Waveform + Slider Timeline -->
+        <div class="fp-wave-section">
+          <div class="waveform-track-wrap" id="waveformWrap">
+            <div class="waveform-container" id="waveformContainer"></div>
+            <div class="wave-played-line" id="wavePlayedLine"></div>
+            <div class="wave-thumb" id="waveThumb"></div>
+          </div>
+          <div class="fp-times">
+            <span id="fpCur">0:00</span>
+            <span id="fpRem" onclick="toggleTimeMode()" style="cursor:pointer;">-0:00</span>
+          </div>
+        </div>
+
+        <!-- Playback Controls -->
+        <div class="fp-controls">
+          <button class="fp-side-ctrl" id="fpRepeatBtn" onclick="toggleRepeat()" title="تکرار آهنگ">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+          </button>
+          <button class="fp-skip-ctrl" onclick="playPrev()" title="قبلی">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
+          </button>
+          <button class="fp-play-circle" id="fpPlayBtn" onclick="togglePlay()">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button class="fp-skip-ctrl" onclick="playNext()" title="بعدی">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
+          </button>
+          <button class="fp-side-ctrl" id="fpShuffleBtn" onclick="toggleShuffle()" title="پخش تصادفی">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+          </button>
+        </div>
+
+        <!-- Volume Control -->
+        <div class="fp-volume-row">
+          <button class="vol-icon-btn" onclick="setVolumeLevel(0)" title="بی‌صدا">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 9v6h4l5 5V4l-5 5H7z"/></svg>
+          </button>
+          <div class="vol-range-wrap">
+            <div class="vol-track"><div class="vol-fill" id="volFill"></div></div>
+            <input type="range" id="volSlider" class="vol-slider-input" min="0" max="1" step="0.01" value="0.85" oninput="setVolumeLevel(this.value)" />
+          </div>
+          <button class="vol-icon-btn" onclick="setVolumeLevel(1)" title="حداکثر صدا">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+          </button>
+        </div>
+
+        <!-- Share to Chat Glass Button -->
+        <div class="fp-bottom-cta">
+          <button class="fp-share-chat-btn" onclick="sendCurrentToChat()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            <span>ارسال به چت تلگرام • Share to Chat</span>
+          </button>
+          <div class="fp-listening-pill">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            <span>Listening via GapMusic Mini App</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <audio id="audioPlayer" preload="none"></audio>
+  <audio id="audioPlayer" crossorigin="anonymous" playsinline preload="auto"></audio>
 
   <script>
     const tg = window.Telegram?.WebApp;
     if (tg) {
       tg.ready();
       tg.expand();
+      tg.setHeaderColor?.('#0b1118');
+      tg.setBackgroundColor?.('#0b1118');
     }
 
     const initData = tg?.initData || '';
-    const userId = tg?.initDataUnsafe?.user?.id || '';
+    const tgUser = tg?.initDataUnsafe?.user || null;
+    let userId = tgUser?.id || localStorage.getItem('gm_uid') || '';
+    if (userId) localStorage.setItem('gm_uid', userId);
+    let userFullName = '';
 
-    let currentTab = 'all';
+    function initUserProfile() {
+      const nameEl = document.getElementById('tgUserName');
+      const avatarEl = document.getElementById('tgUserAvatar');
+
+      if (tgUser) {
+        userFullName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'کاربر';
+        nameEl.textContent = userFullName;
+        avatarEl.textContent = userFullName[0] || 'U';
+
+        if (tgUser.photo_url) {
+          avatarEl.innerHTML = `<img src="${tgUser.photo_url}" alt="avatar" />`;
+        } else if (tgUser.id) {
+          const img = new Image();
+          img.src = `/api/avatar/${tgUser.id}`;
+          img.onload = () => { avatarEl.innerHTML = `<img src="/api/avatar/${tgUser.id}" alt="avatar" />`; };
+        }
+      } else if (userId) {
+        const img = new Image();
+        img.src = `/api/avatar/${userId}`;
+        img.onload = () => { avatarEl.innerHTML = `<img src="/api/avatar/${userId}" alt="avatar" />`; };
+      }
+    }
+    initUserProfile();
+
+    // ===================================================================
+    // REQUEST SONG MODAL LOGIC
+    // ===================================================================
+    function openRequestModal(prefillText = '') {
+      const modal = document.getElementById('requestModal');
+      const input = document.getElementById('modalRequestInput');
+      const btn = document.getElementById('modalSubmitBtn');
+      const searchVal = document.getElementById('searchInput').value.trim();
+
+      input.value = prefillText || searchVal || '';
+      btn.disabled = false;
+      btn.textContent = 'ارسال درخواست به ادمین';
+      modal.classList.add('open');
+      setTimeout(() => input.focus(), 120);
+    }
+
+    function closeRequestModal() {
+      document.getElementById('requestModal').classList.remove('open');
+    }
+
+    async function submitModalRequest() {
+      const input = document.getElementById('modalRequestInput');
+      const btn = document.getElementById('modalSubmitBtn');
+      const q = input.value.trim();
+
+      if (!q) {
+        showToast('⚠️ لطفاً نام آهنگ یا خواننده را وارد کنید.');
+        input.focus();
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '⏳ در حال ارسال به ادمین...';
+
+      try {
+        const res = await fetch('/api/request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: q,
+            init_data: initData,
+            user_id: userId,
+            user_name: userFullName
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          closeRequestModal();
+          input.value = '';
+          showToast('✅ درخواستت به ادمین رسید! به محض آپلود، در پی‌وی بهت خبر میدم.');
+        } else {
+          showToast(`❌ ${data.detail || 'خطا در ارسال درخواست'}`);
+          btn.disabled = false;
+          btn.textContent = 'ارسال درخواست به ادمین';
+        }
+      } catch (e) {
+        showToast('❌ خطا در ارتباط با سرور');
+        btn.disabled = false;
+        btn.textContent = 'ارسال درخواست به ادمین';
+      }
+    }
+
+    const PLAY_SVG = '<svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+    const PAUSE_SVG = '<svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+    const HEART_OUTLINE = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+    const HEART_FILLED = '<svg width="19" height="19" viewBox="0 0 24 24" fill="#ff4d6d"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
+    const SEND_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
+    const TRASH_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+
+    let currentFilter = 'all';
     let currentSongs = [];
+    let totalAvailable = 0;
+    let currentOffset = 0;
+    const PAGE_SIZE = 60;
+    let isLoading = false;
+    let botUsername = '';
+    let isAdminUser = false;
+    let adminModeActive = false;
+
+    let isRepeat = false;
+    let isShuffle = false;
+    let showRemainingTime = true;
+
     let favoriteIds = new Set();
-    let currentIndex = -1;
+    let currentSong = null;
     let searchTimer = null;
+    const coverCache = new Map();
 
     const audio = document.getElementById('audioPlayer');
-    const playPauseBtn = document.getElementById('playPauseBtn');
-    const seekBar = document.getElementById('seekBar');
+    audio.volume = 0.85;
+    document.getElementById('volFill').style.width = '85%';
+
+    const COLORS = [
+      'linear-gradient(135deg, #2b5876, #16222a)',
+      'linear-gradient(135deg, #1d4e6f, #0f172a)',
+      'linear-gradient(135deg, #334155, #0f172a)',
+      'linear-gradient(135deg, #0e7490, #1e293b)',
+      'linear-gradient(135deg, #1e3a5f, #0b1118)'
+    ];
+
+    // ===================================================================
+    // HYBRID WAVEFORM + SCRUBBER
+    // ===================================================================
+    const WAVE_BARS_COUNT = 52;
+    let baseHeights = [];
+    let waveBarsEls = [];
+    let audioCtx = null;
+    let analyser = null;
+    let dataArray = null;
+    let rafId = null;
+
+    function initWaveformBars(seed = 1) {
+      const container = document.getElementById('waveformContainer');
+      container.innerHTML = '';
+      baseHeights = [];
+      waveBarsEls = [];
+
+      for (let i = 0; i < WAVE_BARS_COUNT; i++) {
+        const env = Math.sin((i / WAVE_BARS_COUNT) * Math.PI);
+        const wave = Math.abs(Math.sin(i * 0.45 + seed) * 0.55 + Math.cos(i * 0.92 - seed) * 0.45);
+        const h = Math.max(20, Math.min(95, Math.round((0.25 + env * 0.75) * wave * 100)));
+        baseHeights.push(h);
+
+        const bar = document.createElement('div');
+        bar.className = 'wave-bar';
+        bar.style.height = `${h}%`;
+        container.appendChild(bar);
+        waveBarsEls.push(bar);
+      }
+      updateScrubberVisual(0);
+    }
+    initWaveformBars(3);
+
+    function updateScrubberVisual(progressPct) {
+      const clamped = Math.max(0, Math.min(100, progressPct));
+      document.getElementById('wavePlayedLine').style.width = `${clamped}%`;
+      document.getElementById('waveThumb').style.left = `${clamped}%`;
+
+      const activeIndex = Math.floor((clamped / 100) * WAVE_BARS_COUNT);
+      for (let i = 0; i < waveBarsEls.length; i++) {
+        waveBarsEls[i].classList.toggle('played', i <= activeIndex);
+      }
+    }
+
+    function setupAudioAnalyser() {
+      if (audioCtx) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+        const source = audioCtx.createMediaElementSource(audio);
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 128;
+        source.connect(analyser);
+        analyser.connect(audioCtx.destination);
+        dataArray = new Uint8Array(analyser.frequencyBinCount);
+      } catch (e) {
+        analyser = null;
+      }
+    }
+
+    function animateWaveform() {
+      if (audio.paused) {
+        rafId = null;
+        return;
+      }
+
+      let volumeBoost = 0;
+      if (analyser && dataArray) {
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < 24; i++) sum += dataArray[i];
+        volumeBoost = (sum / 24) / 255;
+      } else {
+        volumeBoost = 0.25 + Math.abs(Math.sin(Date.now() / 170)) * 0.4;
+      }
+
+      const progressRatio = (audio.duration && !isNaN(audio.duration))
+        ? (audio.currentTime / audio.duration)
+        : 0;
+      const activeIndex = Math.floor(progressRatio * WAVE_BARS_COUNT);
+
+      for (let i = 0; i < WAVE_BARS_COUNT; i++) {
+        const bar = waveBarsEls[i];
+        if (!bar) continue;
+
+        let dynamicH = baseHeights[i];
+        if (i > activeIndex && i - activeIndex <= 8) {
+          const proximity = 1 - (i - activeIndex) / 9;
+          dynamicH = Math.min(100, Math.max(20, baseHeights[i] * (0.75 + volumeBoost * 0.85 * proximity)));
+        }
+        bar.style.height = `${Math.round(dynamicH)}%`;
+      }
+
+      rafId = requestAnimationFrame(animateWaveform);
+    }
+
+    const waveWrap = document.getElementById('waveformWrap');
+    let isSeekingWave = false;
+
+    function seekFromPointer(clientX) {
+      if (!audio.duration || isNaN(audio.duration)) return;
+      const rect = waveWrap.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      audio.currentTime = ratio * audio.duration;
+      updateScrubberVisual(ratio * 100);
+    }
+
+    waveWrap.addEventListener('pointerdown', (e) => {
+      isSeekingWave = true;
+      waveWrap.setPointerCapture(e.pointerId);
+      seekFromPointer(e.clientX);
+    });
+    waveWrap.addEventListener('pointermove', (e) => {
+      if (isSeekingWave) seekFromPointer(e.clientX);
+    });
+    waveWrap.addEventListener('pointerup', (e) => {
+      isSeekingWave = false;
+      waveWrap.releasePointerCapture(e.pointerId);
+    });
+
+    function setVolumeLevel(val) {
+      const v = Math.max(0, Math.min(1, parseFloat(val)));
+      try { audio.volume = v; } catch (e) {}
+      document.getElementById('volSlider').value = v;
+      document.getElementById('volFill').style.width = `${Math.round(v * 100)}%`;
+    }
+
+    function toggleRepeat() {
+      isRepeat = !isRepeat;
+      document.getElementById('fpRepeatBtn').classList.toggle('active-blue', isRepeat);
+      showToast(isRepeat ? '🔁 تکرار این ترک فعال شد' : 'تکرار غیرفعال شد');
+    }
+
+    function toggleShuffle() {
+      isShuffle = !isShuffle;
+      document.getElementById('fpShuffleBtn').classList.toggle('active-blue', isShuffle);
+      showToast(isShuffle ? '🔀 پخش تصادفی فعال شد' : 'پخش تصادفی غیرفعال شد');
+    }
+
+    function toggleTimeMode() {
+      showRemainingTime = !showRemainingTime;
+      updateTimeLabels();
+    }
+
+    function updateTimeLabels() {
+      if (!audio.duration || isNaN(audio.duration)) return;
+      document.getElementById('fpCur').textContent = formatTime(audio.currentTime);
+      const remEl = document.getElementById('fpRem');
+      if (showRemainingTime) {
+        const remaining = Math.max(0, audio.duration - audio.currentTime);
+        remEl.textContent = `-${formatTime(remaining)}`;
+      } else {
+        remEl.textContent = formatTime(audio.duration);
+      }
+    }
+
+    function setAmbientCover(url) {
+      const img = document.getElementById('fpAmbientImg');
+      if (!img) return;
+      if (url) {
+        img.classList.remove('loaded');
+        img.src = url;
+        img.onload = () => img.classList.add('loaded');
+      } else {
+        img.classList.remove('loaded');
+        img.removeAttribute('src');
+      }
+    }
+
+    function getColor(id) {
+      return COLORS[Math.abs(id || 0) % COLORS.length];
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3400);
+    }
+
+    async function loadConfig() {
+      try {
+        const res = await fetch(`/api/config?init_data=${encodeURIComponent(initData)}&user_id=${userId}`);
+        const data = await res.json();
+        botUsername = data.bot_username || '';
+        isAdminUser = Boolean(data.is_admin);
+        if (!tgUser && data.user_name) {
+          userFullName = data.user_name;
+          document.getElementById('tgUserName').textContent = data.user_name;
+          document.getElementById('tgUserAvatar').textContent = data.user_name[0];
+        }
+        if (isAdminUser) {
+          document.getElementById('adminToggleBtn').style.display = 'inline-flex';
+          document.getElementById('adminUsersCount').textContent = `👥 ${data.total_users || 0} کاربر`;
+        }
+      } catch (e) {}
+    }
+
+    function toggleAdminMode() {
+      adminModeActive = !adminModeActive;
+      document.getElementById('adminBar').classList.toggle('visible', adminModeActive);
+      renderSongs();
+    }
+
+    async function deleteSongAdmin(songId) {
+      const target = currentSongs.find(s => s.id === songId);
+      const title = target ? target.title : `#${songId}`;
+      if (!confirm(`آیا از حذف کامل موزیک «${title}» (کد #${songId}) مطمئن هستید؟`)) return;
+      try {
+        const res = await fetch(`/api/admin/song/${songId}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ init_data: initData, user_id: userId })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          currentSongs = currentSongs.filter(s => s.id !== songId);
+          totalAvailable = Math.max(0, totalAvailable - 1);
+          document.getElementById('archiveStats').textContent = `${totalAvailable.toLocaleString('fa-IR')} ترک`;
+          renderSongs();
+          showToast(`🗑️ موزیک #${songId} با موفقیت حذف شد.`);
+        } else {
+          showToast(`❌ ${data.detail || 'خطا در حذف موزیک'}`);
+        }
+      } catch (e) {
+        showToast('❌ خطا در ارتباط با سرور');
+      }
+    }
+
+    async function fetchCover(song, targetIds = [], updateAmbient = false) {
+      const key = `${song.performer}_${song.title}`;
+      if (coverCache.has(key)) {
+        const url = coverCache.get(key);
+        if (url) targetIds.forEach(id => applyImg(id, url));
+        if (updateAmbient) setAmbientCover(url);
+        return url;
+      }
+      try {
+        const res = await fetch(`/api/cover?title=${encodeURIComponent(song.title)}&artist=${encodeURIComponent(song.performer)}`);
+        const data = await res.json();
+        coverCache.set(key, data.artwork || null);
+        if (data.artwork) targetIds.forEach(id => applyImg(id, data.artwork));
+        if (updateAmbient) setAmbientCover(data.artwork || null);
+        return data.artwork;
+      } catch (e) {
+        if (updateAmbient) setAmbientCover(null);
+        return null;
+      }
+    }
+
+    function applyImg(elId, url) {
+      const el = document.getElementById(elId);
+      if (el && url) el.innerHTML = `<img src="${url}" alt="art" loading="lazy" />`;
+    }
 
     async function loadFavorites() {
+      if (!userId && !initData) return;
       try {
         const res = await fetch(`/api/favorites?init_data=${encodeURIComponent(initData)}&user_id=${userId}`);
         const data = await res.json();
         favoriteIds = new Set(data.favorite_ids || []);
-        if (currentTab === 'fav') {
+        if (currentFilter === 'fav') {
           currentSongs = data.items || [];
+          document.getElementById('loadMoreBtn').style.display = 'none';
+          document.getElementById('archiveStats').textContent = `${currentSongs.length} موزیک لایک‌شده`;
           renderSongs();
         }
       } catch (e) {}
     }
 
-    async function loadSongs(q = '') {
-      const listEl = document.getElementById('songList');
+    async function fetchSongs(reset = true) {
+      if (isLoading) return;
+      isLoading = true;
+
+      if (reset) {
+        currentOffset = 0;
+        currentSongs = [];
+        document.getElementById('trackList').innerHTML = '<div class="empty-box">در حال دریافت آرشیو...</div>';
+      }
+
+      const q = document.getElementById('searchInput').value.trim();
       try {
-        const res = await fetch(`/api/songs?q=${encodeURIComponent(q)}&limit=60`);
+        const res = await fetch(`/api/songs?q=${encodeURIComponent(q)}&filter=${currentFilter}&offset=${currentOffset}&limit=${PAGE_SIZE}`);
         const data = await res.json();
-        currentSongs = data.items || [];
+
+        totalAvailable = data.total || 0;
+        document.getElementById('archiveStats').textContent = `${totalAvailable.toLocaleString('fa-IR')} ترک`;
+
+        currentSongs = reset ? (data.items || []) : [...currentSongs, ...(data.items || [])];
+        currentOffset = currentSongs.length;
+
+        const moreBtn = document.getElementById('loadMoreBtn');
+        if (data.has_more) {
+          moreBtn.style.display = 'flex';
+          moreBtn.textContent = `نمایش موزیک‌های بیشتر (${currentSongs.length} از ${totalAvailable})`;
+        } else {
+          moreBtn.style.display = 'none';
+        }
+
         renderSongs();
       } catch (e) {
-        listEl.innerHTML = '<div class="empty-msg">خطا در دریافت لیست موزیک‌ها</div>';
+        document.getElementById('trackList').innerHTML = '<div class="empty-box">خطا در ارتباط با سرور</div>';
+      } finally {
+        isLoading = false;
       }
     }
 
-    function switchTab(tab) {
-      currentTab = tab;
-      document.getElementById('tabAll').classList.toggle('active', tab === 'all');
-      document.getElementById('tabFav').classList.toggle('active', tab === 'fav');
-      if (tab === 'all') {
-        loadSongs(document.getElementById('searchInput').value);
+    function loadMore() { fetchSongs(false); }
+
+    function switchNav(tab) {
+      document.getElementById('navHome').classList.toggle('active', tab === 'home');
+      document.getElementById('navSearch').classList.toggle('active', tab === 'search');
+      document.getElementById('navLib').classList.toggle('active', tab === 'lib');
+      document.getElementById('navPopular').classList.toggle('active', tab === 'popular');
+
+      const searchInput = document.getElementById('searchInput');
+      if (tab === 'search') {
+        setTimeout(() => { searchInput.focus(); searchInput.click(); }, 60);
+      } else if (tab === 'lib') {
+        setFilter('fav');
+      } else if (tab === 'popular') {
+        setFilter('popular');
       } else {
-        loadFavorites();
+        setFilter('all');
       }
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.getElementById('boxAll').classList.toggle('active', filter === 'all');
+      document.getElementById('boxFav').classList.toggle('active', filter === 'fav');
+      document.getElementById('boxPopular').classList.toggle('active', filter === 'popular');
+
+      const titles = { all: 'جدیدترین موزیک‌های آرشیو', popular: 'پرطرفدارترین ترک‌ها', fav: 'آهنگ‌های لایک‌شده شما' };
+      document.getElementById('sectionTitle').textContent = titles[filter] || 'موزیک‌ها';
+
+      if (filter === 'fav') loadFavorites();
+      else fetchSongs(true);
     }
 
     function onSearch() {
       clearTimeout(searchTimer);
       searchTimer = setTimeout(() => {
-        if (currentTab !== 'all') switchTab('all');
-        else loadSongs(document.getElementById('searchInput').value);
-      }, 300);
+        currentFilter = 'all';
+        fetchSongs(true);
+      }, 280);
     }
 
     function renderSongs() {
-      const listEl = document.getElementById('songList');
+      const list = document.getElementById('trackList');
+      const q = document.getElementById('searchInput').value.trim();
+
       if (!currentSongs.length) {
-        listEl.innerHTML = '<div class="empty-msg">موزیکی یافت نشد 🎵</div>';
+        if (q) {
+          list.innerHTML = `
+            <div class="not-found-card">
+              <div style="font-size:34px;">🎵</div>
+              <div class="not-found-title">آهنگ «${escapeHtml(q)}» در آرشیو پیدا نشد</div>
+              <div class="not-found-sub">می‌توانید درخواست این آهنگ را برای ادمین بفرستید تا به محض آپلود، در پی‌وی به شما اطلاع داده شود.</div>
+              <button class="request-admin-btn" onclick="openRequestModal()">
+                📩 ارسال درخواست برای ادمین
+              </button>
+            </div>
+          `;
+        } else {
+          list.innerHTML = '<div class="empty-box">موزیکی یافت نشد 🎵</div>';
+        }
         return;
       }
-      listEl.innerHTML = currentSongs.map((s, idx) => {
-        const isPlaying = currentIndex === idx && !audio.paused;
+
+      list.innerHTML = currentSongs.map((s, idx) => {
+        const isCurrent = currentSong && currentSong.uid === s.uid;
         const isFav = favoriteIds.has(s.id);
+        const eqHtml = (isCurrent && !audio.paused)
+          ? '<div class="eq-bars"><span></span><span></span><span></span></div>'
+          : '';
+        const delHtml = (isAdminUser && adminModeActive)
+          ? `<button class="svg-btn del-btn" onclick="deleteSongAdmin(${s.id})" title="حذف کامل">${TRASH_SVG}</button>`
+          : '';
+
         return `
-          <div class="song-card ${currentIndex === idx ? 'playing' : ''}">
-            <div class="song-info" onclick="playSong(${idx})">
-              <div class="song-title">${escapeHtml(s.title)}</div>
-              <div class="song-artist">${escapeHtml(s.performer)}</div>
+          <div class="track-row ${isCurrent ? 'active' : ''}">
+            <div class="track-cover" id="tr_${s.uid}" style="background:${getColor(s.id)}" onclick="playSongByIndex(${idx})">
+              ${escapeHtml(s.title[0] || '🎵')}
             </div>
-            <div class="actions">
-              <button class="icon-btn" onclick="toggleFav(${s.id}, this)" title="علاقه‌مندی">${isFav ? '❤️' : '🤍'}</button>
-              <button class="icon-btn" onclick="sendToChat('${s.uid}')" title="ارسال به پیوی">📥</button>
-              <button class="icon-btn play" onclick="playSong(${idx})">${isPlaying ? '⏸' : '▶'}</button>
+            <div class="track-meta" onclick="playSongByIndex(${idx})">
+              <div class="track-title" style="display:flex;align-items:center;">${eqHtml}${escapeHtml(s.title)}</div>
+              <div class="track-artist">${escapeHtml(s.performer)} ${adminModeActive ? `• #${s.id}` : ''}</div>
+            </div>
+            <div class="track-actions">
+              <button class="svg-btn ${isFav ? 'liked' : ''}" onclick="toggleFav(${s.id}, this)" title="علاقه‌مندی">
+                ${isFav ? HEART_FILLED : HEART_OUTLINE}
+              </button>
+              <button class="svg-btn" onclick="sendToChat('${s.uid}', ${s.id})" title="ارسال فایل به پیوی">
+                ${SEND_SVG}
+              </button>
+              ${delHtml}
             </div>
           </div>
         `;
       }).join('');
+
+      currentSongs.slice(0, 30).forEach(s => fetchCover(s, [`tr_${s.uid}`]));
     }
 
-    function playSong(idx) {
+    async function playSongByIndex(idx) {
       if (idx < 0 || idx >= currentSongs.length) return;
-      if (currentIndex === idx) {
+      const song = currentSongs[idx];
+
+      if (currentSong && currentSong.uid === song.uid) {
         togglePlay();
         return;
       }
-      currentIndex = idx;
-      const song = currentSongs[idx];
-      document.getElementById('pTitle').textContent = song.title;
-      document.getElementById('pArtist').textContent = song.performer;
-      document.getElementById('playerBar').classList.add('visible');
+
+      currentSong = song;
+      initWaveformBars(song.id || 1);
+      setAmbientCover(null);
+      updatePlayerUI(song);
+      document.getElementById('miniPlayer').classList.add('visible');
+
+      setupAudioAnalyser();
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
 
       audio.src = `/api/stream/${encodeURIComponent(song.uid)}`;
-      audio.play().catch(() => {});
-      updateMediaSession(song);
+      audio.load();
+
+      try {
+        await audio.play();
+      } catch (err) {
+        showToast('⚠️ این ترک هنوز سینک نشده یا قابل پخش آنلاین نیست.');
+      }
+
+      const artUrl = await fetchCover(song, ['mpArt', 'fpArt'], true);
+      updateMediaSession(song, artUrl);
       renderSongs();
+    }
+
+    function updatePlayerUI(song) {
+      document.getElementById('mpTitle').textContent = song.title;
+      document.getElementById('mpArtist').textContent = song.performer;
+      document.getElementById('fpTitle').textContent = song.title;
+      document.getElementById('fpArtist').textContent = song.performer;
+
+      const bg = getColor(song.id);
+      const mpArt = document.getElementById('mpArt');
+      const fpArt = document.getElementById('fpArt');
+      mpArt.style.background = bg;
+      fpArt.style.background = bg;
+      mpArt.textContent = song.title[0] || '🎵';
+      fpArt.textContent = song.title[0] || '🎵';
+
+      const isFav = favoriteIds.has(song.id);
+      document.getElementById('mpFavBtn').innerHTML = isFav ? HEART_FILLED : HEART_OUTLINE;
+      document.getElementById('fpFavBtn').innerHTML = isFav ? HEART_FILLED : HEART_OUTLINE;
     }
 
     function togglePlay() {
       if (!audio.src) return;
-      if (audio.paused) audio.play();
-      else audio.pause();
+      if (audio.paused) {
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+        audio.play().catch(() => {});
+      } else {
+        audio.pause();
+      }
     }
 
     function playNext() {
       if (!currentSongs.length) return;
-      const next = (currentIndex + 1) % currentSongs.length;
-      playSong(next);
+      if (isShuffle && currentSongs.length > 1) {
+        let randIdx = Math.floor(Math.random() * currentSongs.length);
+        const curIdx = currentSongs.findIndex(s => currentSong && s.uid === currentSong.uid);
+        if (randIdx === curIdx) randIdx = (randIdx + 1) % currentSongs.length;
+        playSongByIndex(randIdx);
+        return;
+      }
+      const idx = currentSongs.findIndex(s => currentSong && s.uid === currentSong.uid);
+      playSongByIndex((idx + 1) % currentSongs.length);
     }
 
     function playPrev() {
       if (!currentSongs.length) return;
-      const prev = (currentIndex - 1 + currentSongs.length) % currentSongs.length;
-      playSong(prev);
+      if (audio.currentTime > 4) {
+        audio.currentTime = 0;
+        return;
+      }
+      const idx = currentSongs.findIndex(s => currentSong && s.uid === currentSong.uid);
+      playSongByIndex((idx - 1 + currentSongs.length) % currentSongs.length);
     }
 
     async function playRandom() {
@@ -261,12 +2129,16 @@
         const song = await res.json();
         if (song.uid) {
           currentSongs = [song, ...currentSongs];
-          playSong(0);
+          playSongByIndex(0);
         }
       } catch (e) {}
     }
 
     async function toggleFav(songId, btn) {
+      if (!userId && !initData) {
+        showToast('برای ذخیره علاقه‌مندی‌ها، مینی‌اپ را از داخل ربات باز کنید.');
+        return;
+      }
       try {
         const res = await fetch(`/api/favorite/${songId}`, {
           method: 'POST',
@@ -276,29 +2148,59 @@
         const data = await res.json();
         if (data.liked) favoriteIds.add(songId);
         else favoriteIds.delete(songId);
-        btn.textContent = data.liked ? '❤️' : '🤍';
-        if (currentTab === 'fav' && !data.liked) loadFavorites();
+        if (btn) btn.innerHTML = data.liked ? HEART_FILLED : HEART_OUTLINE;
+        if (currentSong && currentSong.id === songId) updatePlayerUI(currentSong);
+        if (currentFilter === 'fav' && !data.liked) loadFavorites();
       } catch (e) {}
     }
 
-    async function sendToChat(uid) {
+    function toggleCurrentFav() {
+      if (currentSong) toggleFav(currentSong.id, null);
+    }
+
+    async function sendToChat(uid, songId) {
+      showToast('⏳ در حال ارسال موزیک به چت شما...');
       try {
         const res = await fetch(`/api/send/${encodeURIComponent(uid)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ init_data: initData, user_id: userId })
         });
-        if (res.ok && tg) tg.showAlert('✅ موزیک به چت شما در ربات ارسال شد!');
-      } catch (e) {}
+        const data = await res.json();
+        if (res.ok) {
+          showToast('✅ موزیک با موفقیت به پیوی شما ارسال شد!');
+        } else if (data.need_start && (data.deep_link || botUsername)) {
+          const link = data.deep_link || `https://t.me/${botUsername}?start=song_${songId}`;
+          showToast('در حال باز کردن ربات برای تحویل فایل...');
+          if (tg?.openTelegramLink) tg.openTelegramLink(link);
+          else window.open(link, '_blank');
+        } else {
+          showToast(`❌ ${data.detail || 'خطا در ارسال به پیوی'}`);
+        }
+      } catch (e) {
+        showToast('❌ خطا در ارتباط با سرور');
+      }
     }
 
-    // پشتیبانی از پخش پس‌زمینه و دکمه‌های صفحه قفل گوشی
-    function updateMediaSession(song) {
+    function sendCurrentToChat() {
+      if (currentSong) sendToChat(currentSong.uid, currentSong.id);
+    }
+
+    function openFullPlayer() {
+      if (!currentSong && currentSongs.length > 0) playSongByIndex(0);
+      document.getElementById('fullPlayer').classList.add('open');
+    }
+    function closeFullPlayer() {
+      document.getElementById('fullPlayer').classList.remove('open');
+    }
+
+    function updateMediaSession(song, artUrl) {
       if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
           title: song.title,
           artist: song.performer,
-          album: 'GapMusic'
+          album: 'GapMusic',
+          artwork: artUrl ? [{ src: artUrl, sizes: '500x500', type: 'image/jpeg' }] : []
         });
         navigator.mediaSession.setActionHandler('play', () => audio.play());
         navigator.mediaSession.setActionHandler('pause', () => audio.pause());
@@ -307,21 +2209,39 @@
       }
     }
 
-    audio.addEventListener('play', () => { playPauseBtn.textContent = '⏸'; renderSongs(); });
-    audio.addEventListener('pause', () => { playPauseBtn.textContent = '▶'; renderSongs(); });
-    audio.addEventListener('ended', playNext); // پخش خودکار آهنگ بعدی
-
-    audio.addEventListener('timeupdate', () => {
-      if (!audio.duration) return;
-      seekBar.value = (audio.currentTime / audio.duration) * 100;
-      document.getElementById('curTime').textContent = formatTime(audio.currentTime);
-      document.getElementById('durTime').textContent = formatTime(audio.duration);
+    audio.addEventListener('playing', () => {
+      document.getElementById('mpPlayBtn').innerHTML = PAUSE_SVG;
+      document.getElementById('fpPlayBtn').innerHTML = PAUSE_SVG;
+      document.getElementById('fpArt').classList.add('playing-scale');
+      document.getElementById('fpLiveWave').classList.add('animating');
+      if (!rafId) animateWaveform();
+      renderSongs();
     });
 
-    function seekAudio() {
-      if (!audio.duration) return;
-      audio.currentTime = (seekBar.value / 100) * audio.duration;
-    }
+    audio.addEventListener('pause', () => {
+      document.getElementById('mpPlayBtn').innerHTML = PLAY_SVG;
+      document.getElementById('fpPlayBtn').innerHTML = PLAY_SVG;
+      document.getElementById('fpArt').classList.remove('playing-scale');
+      document.getElementById('fpLiveWave').classList.remove('animating');
+      renderSongs();
+    });
+
+    audio.addEventListener('ended', () => {
+      if (isRepeat) {
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
+      } else {
+        playNext();
+      }
+    });
+
+    audio.addEventListener('timeupdate', () => {
+      if (!audio.duration || isNaN(audio.duration)) return;
+      const pct = (audio.currentTime / audio.duration) * 100;
+      document.getElementById('mpLineFill').style.width = `${pct}%`;
+      if (!isSeekingWave) updateScrubberVisual(pct);
+      updateTimeLabels();
+    });
 
     function formatTime(sec) {
       const m = Math.floor(sec / 60);
@@ -333,8 +2253,14 @@
       return String(str).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
     }
 
+    document.getElementById('searchInput').addEventListener('touchend', function() {
+      this.focus();
+      this.click();
+    });
+
+    loadConfig();
     loadFavorites();
-    loadSongs();
+    fetchSongs(true);
   </script>
 </body>
 </html>
