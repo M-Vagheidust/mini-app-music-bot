@@ -14,18 +14,18 @@
   <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0b1118;
-      --bg-deep: #070b10;
+      --bg: #0b131c;
+      --bg-deep: #070c12;
       --surface: rgba(24, 34, 46, 0.72);
-      --glass: rgba(255, 255, 255, 0.07);
-      --glass-strong: rgba(255, 255, 255, 0.13);
-      --glass-border: rgba(255, 255, 255, 0.12);
+      --glass: rgba(255, 255, 255, 0.055);
+      --glass-strong: rgba(255, 255, 255, 0.12);
+      --glass-border: rgba(255, 255, 255, 0.09);
       --tg-blue: #38a3f1;
       --tg-blue-glow: rgba(56, 163, 241, 0.38);
-      --tg-blue-soft: rgba(56, 163, 241, 0.16);
+      --tg-blue-soft: rgba(56, 163, 241, 0.15);
       --danger: #ff4d6d;
       --text: #ffffff;
-      --subtext: #94a3b8;
+      --subtext: #8b9bb0;
       --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
     }
 
@@ -46,7 +46,7 @@
     body {
       padding-bottom: 148px;
       background:
-        radial-gradient(circle at 18% 0%, rgba(56, 163, 241, 0.18) 0%, rgba(15, 23, 34, 0.92) 45%, var(--bg-deep) 100%);
+        radial-gradient(circle at 22% 8%, rgba(56, 163, 241, 0.13) 0%, rgba(12, 20, 30, 0.94) 44%, var(--bg-deep) 100%);
       background-color: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -62,135 +62,114 @@
       -webkit-user-select: text !important;
     }
 
-    /* Header */
+    /* =================================================================
+       HEADER (MATCHING MOCKUP)
+       ================================================================= */
     .app-header {
-      padding: 12px 14px 10px;
+      padding: 14px 16px 8px;
       position: sticky;
       top: 0;
       z-index: 25;
-      background: rgba(11, 17, 24, 0.82);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border-bottom: 1px solid var(--glass-border);
+      background: linear-gradient(180deg, rgba(11, 19, 28, 0.94) 0%, rgba(11, 19, 28, 0.8) 78%, rgba(11, 19, 28, 0) 100%);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
     }
 
     .header-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 6px;
-      margin-bottom: 10px;
+      gap: 10px;
+      margin-bottom: 12px;
     }
 
     .brand-box {
       display: flex;
       align-items: center;
-      gap: 8px;
       min-width: 0;
       flex-shrink: 0;
     }
 
-    .wave-icon {
+    .brand-titles {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      line-height: 1.2;
+    }
+    .brand-name-row {
       display: flex;
       align-items: center;
-      gap: 2px;
-      height: 20px;
-      flex-shrink: 0;
+      gap: 5px;
     }
-    .wave-icon span {
-      width: 2.5px;
-      background: var(--tg-blue);
-      border-radius: 3px;
-      box-shadow: 0 0 8px var(--tg-blue-glow);
+    .brand-name {
+      font-size: 15.5px;
+      font-weight: 900;
+      letter-spacing: 0.4px;
+      color: #ffffff;
+      white-space: nowrap;
     }
-    .wave-icon span:nth-child(1) { height: 9px; }
-    .wave-icon span:nth-child(2) { height: 16px; }
-    .wave-icon span:nth-child(3) { height: 20px; }
-    .wave-icon span:nth-child(4) { height: 13px; }
-    .wave-icon span:nth-child(5) { height: 8px; }
-
-    .brand-titles { display: flex; flex-direction: column; line-height: 1.15; }
-    .brand-name-row { display: flex; align-items: center; gap: 4px; }
-    .brand-name { font-size: 14.5px; font-weight: 900; letter-spacing: 0.2px; white-space: nowrap; }
-    .brand-name b { color: var(--tg-blue); }
     .verified-badge {
-      width: 14px;
-      height: 14px;
+      width: 15px;
+      height: 15px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       color: var(--tg-blue);
       flex-shrink: 0;
     }
-    .brand-sub { font-size: 9px; color: var(--subtext); letter-spacing: 0.4px; }
+    .brand-sub {
+      font-size: 10px;
+      color: var(--subtext);
+      font-weight: 500;
+      margin-top: 1px;
+    }
 
-    .header-right-group {
+    .header-left-group {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       min-width: 0;
-      justify-content: flex-end;
     }
 
     .header-req-btn {
-      background: var(--tg-blue-soft);
-      border: 1px solid rgba(56, 163, 241, 0.42);
-      color: #ffffff;
+      background: rgba(56, 163, 241, 0.14);
+      border: 1px solid rgba(56, 163, 241, 0.34);
+      color: #7cc4fa;
       border-radius: 500px;
       height: 34px;
-      padding: 0 10px;
-      font-size: 11px;
-      font-weight: 800;
+      padding: 0 13px;
+      font-size: 11.5px;
+      font-weight: 700;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
       white-space: nowrap;
       cursor: pointer;
       flex-shrink: 0;
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       transition: transform 0.2s var(--ease-spring), background 0.2s ease;
     }
     .header-req-btn:active {
-      transform: scale(0.93);
-      background: rgba(56, 163, 241, 0.28);
-    }
-
-    .user-pill {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--glass);
-      border: 1px solid var(--glass-border);
-      border-radius: 500px;
-      padding: 2px 8px 2px 3px;
-      max-width: 118px;
-      min-width: 0;
-    }
-
-    .user-name-label {
-      font-size: 11px;
-      font-weight: 700;
-      color: #f1f5f9;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      transform: scale(0.94);
+      background: rgba(56, 163, 241, 0.26);
     }
 
     .user-avatar-circle {
-      width: 28px;
-      height: 28px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
-      background: linear-gradient(135deg, var(--tg-blue), #1b4f7a);
-      border: 1.5px solid rgba(56, 163, 241, 0.75);
-      box-shadow: 0 0 10px var(--tg-blue-glow);
+      background: linear-gradient(135deg, #2b5876, #182b3a);
+      border: 1.5px solid rgba(255, 255, 255, 0.22);
       overflow: hidden;
       flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 800;
       color: #fff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
     }
     .user-avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -198,19 +177,19 @@
 
     .sp-search-bar {
       flex: 1;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid var(--glass-border);
-      border-radius: 500px;
+      background: rgba(255, 255, 255, 0.055);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 13px;
       display: flex;
       align-items: center;
-      padding: 0 12px;
-      height: 38px;
-      gap: 8px;
+      padding: 0 13px;
+      height: 40px;
+      gap: 9px;
       transition: border-color 0.25s ease, box-shadow 0.25s ease;
     }
     .sp-search-bar:focus-within {
-      border-color: var(--tg-blue);
-      box-shadow: 0 0 0 2px rgba(56, 163, 241, 0.18);
+      border-color: rgba(56, 163, 241, 0.55);
+      box-shadow: 0 0 0 2px rgba(56, 163, 241, 0.14);
     }
 
     .sp-search-bar input {
@@ -218,19 +197,19 @@
       outline: none;
       background: transparent;
       color: #ffffff;
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 12.5px;
+      font-weight: 500;
       width: 100%;
       height: 100%;
     }
-    .sp-search-bar input::placeholder { color: #8b9bb0; }
+    .sp-search-bar input::placeholder { color: #7e90a6; }
 
     .admin-mini-btn {
-      background: rgba(255, 77, 109, 0.16);
-      border: 1px solid rgba(255, 77, 109, 0.55);
+      background: rgba(255, 77, 109, 0.15);
+      border: 1px solid rgba(255, 77, 109, 0.45);
       color: #fff;
-      border-radius: 500px;
-      height: 38px;
+      border-radius: 13px;
+      height: 40px;
       padding: 0 12px;
       font-size: 11.5px;
       font-weight: 800;
@@ -365,96 +344,115 @@
       cursor: pointer;
     }
 
-    /* Hero Banner - Frosted Glass Card */
+    /* =================================================================
+       HERO BANNER - CENTERED LUMINOUS GLASS CARD (MATCHING MOCKUP)
+       ================================================================= */
     .hero-banner {
-      margin: 12px 14px;
-      border-radius: 22px;
-      padding: 16px 18px;
-      background: linear-gradient(135deg, rgba(44, 66, 88, 0.55) 0%, rgba(20, 31, 45, 0.72) 55%, rgba(16, 46, 74, 0.68) 100%);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      box-shadow: 0 16px 38px rgba(0, 0, 0, 0.45);
+      margin: 12px 16px 14px;
+      border-radius: 20px;
+      padding: 24px 20px 22px;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(72, 168, 240, 0.42) 0%, rgba(30, 56, 82, 0.28) 42%, transparent 70%),
+        radial-gradient(circle at 92% 95%, rgba(235, 64, 96, 0.34) 0%, rgba(110, 32, 52, 0.16) 40%, transparent 68%),
+        linear-gradient(145deg, rgba(38, 57, 77, 0.62) 0%, rgba(23, 33, 46, 0.78) 100%);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow:
+        0 18px 42px rgba(0, 0, 0, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
       position: relative;
       overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .hero-content { z-index: 2; flex: 1; min-width: 0; }
-    .hero-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 10.5px;
-      font-weight: 700;
-      color: #e2e8f0;
-      background: rgba(255, 255, 255, 0.11);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 4px 11px;
-      border-radius: 500px;
-      margin-bottom: 8px;
-    }
-    .hero-title { font-size: 18px; font-weight: 900; margin: 0 0 4px 0; line-height: 1.25; }
-    .hero-title span { color: var(--tg-blue); }
-    .hero-desc { font-size: 11.5px; color: #cbd5e1; margin-bottom: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    .play-now-pill {
-      background: rgba(255, 255, 255, 0.95);
-      color: #0b1118;
-      border: none;
-      border-radius: 500px;
-      padding: 8px 16px;
-      font-size: 12px;
-      font-weight: 800;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      white-space: nowrap;
-      cursor: pointer;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
-      transition: transform 0.2s var(--ease-spring);
-    }
-    .play-now-pill:active { transform: scale(0.95); }
-
-    /* Quick Filter Boxes */
-    .quick-boxes-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      padding: 2px 14px 12px;
-    }
-
-    .quick-action-box {
-      background: var(--glass);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: 1px solid var(--glass-border);
-      border-radius: 16px;
-      padding: 12px 4px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      text-align: center;
+    }
+
+    .hero-title {
+      font-size: 20px;
+      font-weight: 800;
+      margin: 0 0 4px 0;
+      color: #ffffff;
+      letter-spacing: 0.2px;
+      direction: ltr;
+    }
+    .hero-desc {
+      font-size: 12.5px;
+      color: rgba(255, 255, 255, 0.72);
+      margin-bottom: 16px;
+      font-weight: 500;
+    }
+
+    .play-now-pill {
+      background: #ffffff;
+      color: #0b131c;
+      border: none;
+      border-radius: 12px;
+      padding: 9px 22px;
+      font-size: 13px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      white-space: nowrap;
       cursor: pointer;
-      transition: all 0.25s var(--ease-spring);
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.32);
+      transition: transform 0.2s var(--ease-spring), opacity 0.2s ease;
     }
+    .play-now-pill:active { transform: scale(0.95); }
+
+    /* =================================================================
+       QUICK FILTER BOXES - 2x2 HORIZONTAL GLASS CARDS (MATCHING MOCKUP)
+       ================================================================= */
+    .quick-boxes-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      padding: 2px 16px 14px;
+    }
+
+    .quick-action-box {
+      background: rgba(255, 255, 255, 0.055);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 14px;
+      padding: 13px 14px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      cursor: pointer;
+      transition: all 0.22s var(--ease-spring);
+    }
+    .quick-action-box:active { transform: scale(0.97); }
     .quick-action-box.active {
-      background: linear-gradient(180deg, rgba(56, 163, 241, 0.24), rgba(20, 32, 46, 0.88));
-      border-color: rgba(56, 163, 241, 0.6);
-      box-shadow: 0 6px 18px rgba(56, 163, 241, 0.16);
+      background: linear-gradient(135deg, rgba(56, 163, 241, 0.22), rgba(255, 255, 255, 0.07));
+      border-color: rgba(56, 163, 241, 0.55);
+      box-shadow: 0 6px 18px rgba(56, 163, 241, 0.14);
     }
-    .qab-icon { color: #e2e8f0; display: flex; align-items: center; justify-content: center; }
+    .qab-icon {
+      color: rgba(255, 255, 255, 0.78);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
     .quick-action-box.active .qab-icon { color: var(--tg-blue); }
-    .qab-label { font-size: 10.5px; font-weight: 700; color: #e5e7eb; white-space: nowrap; text-align: center; }
+    .qab-label {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #edf2f7;
+      white-space: nowrap;
+    }
 
     /* Admin Bar */
     .admin-bar {
-      margin: 4px 14px 10px;
+      margin: 4px 16px 10px;
       padding: 10px 14px;
       border-radius: 14px;
       background: rgba(255, 77, 109, 0.14);
@@ -466,37 +464,47 @@
     .admin-bar.visible { display: flex; }
 
     .section-heading {
-      padding: 4px 16px 8px;
+      padding: 6px 18px 8px;
       font-size: 15px;
       font-weight: 800;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    .section-heading span { font-size: 11.5px; color: var(--tg-blue); font-weight: 700; }
+    .section-heading span { font-size: 11.5px; color: var(--subtext); font-weight: 600; }
 
-    /* Track Rows */
-    .track-list { padding: 0 12px; display: flex; flex-direction: column; gap: 6px; }
+    /* =================================================================
+       CLEAN BORDERLESS TRACK LIST (MATCHING MOCKUP)
+       ================================================================= */
+    .track-list {
+      padding: 0 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
 
     .track-row {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 8px 10px;
-      border-radius: 16px;
+      gap: 12px;
+      padding: 8px 8px;
+      border-radius: 14px;
+      background: transparent;
+      border: 1px solid transparent;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .track-row:active {
       background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.04);
-      transition: transform 0.25s var(--ease-spring), background 0.25s ease, border-color 0.25s ease;
     }
     .track-row.active {
-      background: linear-gradient(90deg, rgba(56, 163, 241, 0.18), rgba(24, 35, 48, 0.85));
-      border-color: rgba(56, 163, 241, 0.45);
+      background: rgba(56, 163, 241, 0.12);
+      border-color: rgba(56, 163, 241, 0.28);
     }
 
     .track-cover {
       width: 48px;
       height: 48px;
-      border-radius: 12px;
+      border-radius: 10px;
       flex-shrink: 0;
       position: relative;
       overflow: hidden;
@@ -506,31 +514,45 @@
       font-weight: 800;
       font-size: 17px;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.32);
     }
     .track-cover img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
 
     .track-meta { flex: 1; min-width: 0; cursor: pointer; }
-    .track-title { font-size: 13.5px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .track-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .track-row.active .track-title { color: var(--tg-blue); }
-    .track-artist { font-size: 11.5px; color: var(--subtext); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .track-artist {
+      font-size: 11.5px;
+      color: var(--subtext);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
-    .track-actions { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
+    .track-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
 
     .svg-btn {
       width: 34px;
       height: 34px;
       border: none;
       background: transparent;
-      color: var(--subtext);
+      color: rgba(255, 255, 255, 0.55);
       display: inline-flex;
       align-items: center;
       justify-content: center;
       border-radius: 50%;
       cursor: pointer;
-      transition: transform 0.18s ease, background 0.18s ease;
+      transition: transform 0.18s ease, color 0.18s ease;
     }
-    .svg-btn:active { transform: scale(0.9); }
+    .svg-btn:active { transform: scale(0.88); }
     .svg-btn.liked { color: #ff4d6d; }
     .svg-btn.del-btn { color: #ff4d6d; background: rgba(255, 77, 109, 0.14); }
 
@@ -541,16 +563,16 @@
     @keyframes eqBounce { 0% { height: 4px; } 100% { height: 13px; } }
 
     .load-more {
-      margin: 14px;
-      padding: 12px;
-      border-radius: 500px;
-      background: var(--tg-blue-soft);
-      border: 1px solid rgba(56, 163, 241, 0.4);
-      color: #fff;
+      margin: 14px 16px;
+      padding: 11px;
+      border-radius: 14px;
+      background: rgba(56, 163, 241, 0.13);
+      border: 1px solid rgba(56, 163, 241, 0.34);
+      color: #ffffff;
       font-size: 12.5px;
       font-weight: 700;
       cursor: pointer;
-      width: calc(100% - 28px);
+      width: calc(100% - 32px);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -558,9 +580,9 @@
 
     /* Request Box when no song found */
     .not-found-card {
-      margin: 18px 4px;
+      margin: 18px 6px;
       padding: 26px 18px;
-      border-radius: 22px;
+      border-radius: 20px;
       background: var(--surface);
       backdrop-filter: blur(18px);
       border: 1px solid var(--glass-border);
@@ -592,21 +614,21 @@
     /* Floating Glass Mini Player */
     .sp-mini-player {
       position: fixed;
-      bottom: 68px;
-      left: 10px;
-      right: 10px;
-      height: 62px;
-      background: rgba(24, 34, 46, 0.86);
+      bottom: 70px;
+      left: 12px;
+      right: 12px;
+      height: 60px;
+      background: rgba(28, 40, 54, 0.88);
       backdrop-filter: blur(26px);
       -webkit-backdrop-filter: blur(26px);
       border: 1px solid rgba(255, 255, 255, 0.14);
-      border-radius: 18px;
+      border-radius: 16px;
       padding: 6px 10px;
       display: flex;
       align-items: center;
       gap: 10px;
       z-index: 40;
-      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.65);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.6);
       overflow: hidden;
       transform: translateY(150%);
       opacity: 0;
@@ -618,9 +640,9 @@
     .mp-progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--tg-blue), #ffffff); }
 
     .mp-art {
-      width: 44px;
-      height: 44px;
-      border-radius: 11px;
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
       flex-shrink: 0;
       position: relative;
       overflow: hidden;
@@ -633,7 +655,7 @@
     .mp-art img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
     .mp-info { flex: 1; min-width: 0; cursor: pointer; }
     .mp-title { font-size: 13px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .mp-artist { font-size: 11px; color: var(--tg-blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mp-artist { font-size: 11px; color: rgba(255, 255, 255, 0.68); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* Bottom Navigation - Telegram Glass Bar */
     .bottom-nav {
@@ -642,14 +664,14 @@
       left: 0;
       right: 0;
       height: 62px;
-      background: rgba(11, 17, 24, 0.92);
+      background: rgba(10, 16, 24, 0.94);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
       display: flex;
       justify-content: space-around;
       align-items: center;
       z-index: 45;
-      border-top: 1px solid var(--glass-border);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
       padding: 0 6px;
     }
 
@@ -673,14 +695,14 @@
       width: 46px;
       height: 46px;
       border-radius: 50%;
-      background: linear-gradient(145deg, var(--tg-blue), #1e7fc7);
+      background: linear-gradient(145deg, #42b0ff, #2089d8);
       color: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
       box-shadow: 0 4px 20px var(--tg-blue-glow);
       margin-top: -10px;
-      border: 2px solid #0b1118;
+      border: 2px solid #0a1018;
       cursor: pointer;
       flex-shrink: 0;
       transition: transform 0.2s var(--ease-spring);
@@ -688,7 +710,7 @@
     .nav-center-btn:active { transform: scale(0.92); }
 
     /* =================================================================
-       FULL-SCREEN GLASS TELEGRAM MUSIC PLAYER (MATCHING MOCKUP)
+       FULL-SCREEN GLASS TELEGRAM MUSIC PLAYER (UNCHANGED)
        ================================================================= */
     .full-player {
       position: fixed;
@@ -706,7 +728,6 @@
     }
     .full-player.open { transform: translateY(0); }
 
-    /* Dynamic blurred ambient backdrop */
     .fp-ambient-bg {
       position: absolute;
       inset: 0;
@@ -741,7 +762,6 @@
       gap: 12px;
     }
 
-    /* Top Telegram-style header inside player */
     .fp-top {
       display: flex;
       justify-content: space-between;
@@ -789,7 +809,6 @@
       cursor: pointer;
     }
 
-    /* Play & Share Pill */
     .fp-pill-wrap {
       display: flex;
       justify-content: center;
@@ -809,7 +828,6 @@
       color: rgba(255, 255, 255, 0.92);
     }
 
-    /* Large Rounded Glass Artwork */
     .fp-artwork-wrap {
       display: flex;
       align-items: center;
@@ -838,7 +856,6 @@
     }
     .fp-artwork img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
 
-    /* Track Info + Action Pills (Wave / Heart / Share) */
     .fp-details {
       display: flex;
       justify-content: space-between;
@@ -927,7 +944,6 @@
       border-color: rgba(56, 163, 241, 0.32);
     }
 
-    /* Hybrid Waveform + Scrubber Timeline (Like Mockup) */
     .fp-wave-section {
       margin: 6px 0 4px;
       direction: ltr;
@@ -962,9 +978,7 @@
       background: rgba(255, 255, 255, 0.22);
       transition: background-color 0.15s ease, height 0.09s linear;
     }
-    .wave-bar.played {
-      background: rgba(255, 255, 255, 0.08);
-    }
+    .wave-bar.played { background: rgba(255, 255, 255, 0.08); }
 
     .wave-played-line {
       position: absolute;
@@ -1002,7 +1016,6 @@
       font-variant-numeric: tabular-nums;
     }
 
-    /* Playback Controls (Repeat - Prev - Glass Play - Next - Shuffle) */
     .fp-controls {
       display: flex;
       justify-content: space-between;
@@ -1060,7 +1073,6 @@
     }
     .fp-play-circle:active { transform: scale(0.92); background: rgba(255, 255, 255, 0.24); }
 
-    /* Volume Slider Row (Like Mockup) */
     .fp-volume-row {
       display: flex;
       align-items: center;
@@ -1098,7 +1110,7 @@
     }
     .vol-fill {
       height: 100%;
-      width: 78%;
+      width: 85%;
       background: rgba(255, 255, 255, 0.9);
       border-radius: 999px;
     }
@@ -1132,7 +1144,6 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
     }
 
-    /* Share to Chat Glass CTA + Status Pill */
     .fp-bottom-cta {
       display: flex;
       flex-direction: column;
@@ -1233,76 +1244,69 @@
   <header class="app-header">
     <div class="header-top">
       <div class="brand-box">
-        <div class="wave-icon"><span></span><span></span><span></span><span></span><span></span></div>
         <div class="brand-titles">
           <div class="brand-name-row">
-            <div class="brand-name">GAP<b>MUSIC</b></div>
+            <div class="brand-name">GAPMUSIC</div>
             <span class="verified-badge" title="Telegram Mini App">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.39 1.98 3.09-.33 1.24 2.86 2.86 1.24-.33 3.09L23.23 13l-1.98 2.39.33 3.09-2.86 1.24-1.24 2.86-3.09-.33L12 24l-2.39-1.98-3.09.33-1.24-2.86-2.86-1.24.33-3.09L.77 13l1.98-2.39-.33-3.09 2.86-1.24 1.24-2.86 3.09.33L12 2zm-1.2 14.2l5.8-5.8-1.4-1.4-4.4 4.4-2.2-2.2-1.4 1.4 3.6 3.6z"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.39 1.98 3.09-.33 1.24 2.86 2.86 1.24-.33 3.09L23.23 13l-1.98 2.39.33 3.09-2.86 1.24-1.24 2.86-3.09-.33L12 24l-2.39-1.98-3.09.33-1.24-2.86-2.86-1.24.33-3.09L.77 13l1.98-2.39-.33-3.09 2.86-1.24 1.24-2.86 3.09.33L12 2zm-1.2 14.2l5.8-5.8-1.4-1.4-4.4 4.4-2.2-2.2-1.4 1.4 3.6 3.6z"/></svg>
             </span>
           </div>
           <div class="brand-sub">Telegram Mini App</div>
         </div>
       </div>
 
-      <div class="header-right-group">
+      <div class="header-left-group">
         <button class="header-req-btn" onclick="openRequestModal()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
           آهنگ درخواستی
         </button>
 
-        <div class="user-pill">
-          <span class="user-name-label" id="tgUserName">کاربر</span>
-          <div class="user-avatar-circle" id="tgUserAvatar">G</div>
-        </div>
+        <div class="user-avatar-circle" id="tgUserAvatar" title="پروفایل">G</div>
       </div>
     </div>
 
     <div class="search-bar-row">
       <div class="sp-search-bar">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="#94a3b8"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-        <input type="text" id="searchInput" placeholder="جستجوی فارسی یا انگلیسی آهنگ، خواننده..." oninput="onSearch()" autocomplete="off" inputmode="search" />
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="#7e90a6"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input type="text" id="searchInput" placeholder="جستجوی آهنگ، خواننده..." oninput="onSearch()" autocomplete="off" inputmode="search" />
       </div>
       <button class="admin-mini-btn" id="adminToggleBtn" onclick="toggleAdminMode()">🛡️ ادمین</button>
     </div>
   </header>
 
-  <!-- Hero Banner -->
+  <!-- Centered Luminous Glass Hero Card -->
   <section class="hero-banner">
-    <div class="hero-content">
-      <div class="hero-tag">🎵 Play & Share • آرشیو آنلاین</div>
-      <h2 class="hero-title">GapMusic <span>Player</span></h2>
-      <div class="hero-desc">پخش آنلاین با کیفیت بالا و ارسال مستقیم در چت تلگرام</div>
-      <button class="play-now-pill" onclick="playRandom()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-        پخش شانسی
-      </button>
-    </div>
+    <h2 class="hero-title">GapMusic Player</h2>
+    <div class="hero-desc">آرشیو آنلاین موزیک</div>
+    <button class="play-now-pill" onclick="playRandom()">
+      <span>پخش شانسی</span>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+    </button>
   </section>
 
-  <!-- Quick Category Boxes -->
+  <!-- 2x2 Quick Category Cards -->
   <div class="quick-boxes-grid">
     <div class="quick-action-box active" id="boxAll" onclick="setFilter('all')">
       <div class="qab-icon">
-        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
       </div>
       <div class="qab-label">کل آرشیو</div>
     </div>
     <div class="quick-action-box" id="boxFav" onclick="setFilter('fav')">
       <div class="qab-icon">
-        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
       </div>
       <div class="qab-label">لایک‌شده‌ها</div>
     </div>
     <div class="quick-action-box" id="boxPopular" onclick="setFilter('popular')">
       <div class="qab-icon">
-        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 2c.5 3.5-2 5.5-2 8.5a4 4 0 0 0 8 0c0-3.5-2.5-6.5-6-8.5z"/><path d="M9.5 13.5c-1.5 1-2.5 2.5-2.5 4.5a5 5 0 0 0 10 0"/></svg>
       </div>
       <div class="qab-label">برترین‌ها</div>
     </div>
     <div class="quick-action-box" onclick="playRandom()">
       <div class="qab-icon">
-        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
       </div>
       <div class="qab-label">پخش شانسی</div>
     </div>
@@ -1333,7 +1337,7 @@
       <div class="mp-artist" id="mpArtist">GapMusic</div>
     </div>
     <button class="svg-btn" id="mpFavBtn" onclick="toggleCurrentFav()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
     </button>
     <button class="svg-btn" style="color:#fff;" id="mpPlayBtn" onclick="togglePlay()">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
@@ -1356,7 +1360,7 @@
     </div>
     <div class="nav-item" id="navLib" onclick="switchNav('lib')">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-      <span>پلی‌لیست</span>
+      <span>کتابخانه</span>
     </div>
     <div class="nav-item" id="navPopular" onclick="switchNav('popular')">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
@@ -1372,7 +1376,6 @@
     </div>
 
     <div class="fp-inner">
-      <!-- Top Bar -->
       <div class="fp-top">
         <button class="fp-top-text-btn" onclick="closeFullPlayer()">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
@@ -1392,7 +1395,6 @@
         </button>
       </div>
 
-      <!-- Play & Share Pill -->
       <div class="fp-pill-wrap">
         <div class="fp-play-share-pill">
           <span>🎵</span>
@@ -1400,14 +1402,11 @@
         </div>
       </div>
 
-      <!-- Large Cover Art -->
       <div class="fp-artwork-wrap">
         <div class="fp-artwork" id="fpArt">🎵</div>
       </div>
 
-      <!-- Lower Controls Stack -->
       <div style="display:flex; flex-direction:column; gap:10px;">
-        <!-- Title + Inline Wave / Heart / Share -->
         <div class="fp-details">
           <div class="fp-titles">
             <div class="fp-title" id="fpTitle">عنوان آهنگ</div>
@@ -1430,7 +1429,6 @@
           </div>
         </div>
 
-        <!-- Hybrid Waveform + Slider Timeline -->
         <div class="fp-wave-section">
           <div class="waveform-track-wrap" id="waveformWrap">
             <div class="waveform-container" id="waveformContainer"></div>
@@ -1443,7 +1441,6 @@
           </div>
         </div>
 
-        <!-- Playback Controls -->
         <div class="fp-controls">
           <button class="fp-side-ctrl" id="fpRepeatBtn" onclick="toggleRepeat()" title="تکرار آهنگ">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
@@ -1462,7 +1459,6 @@
           </button>
         </div>
 
-        <!-- Volume Control -->
         <div class="fp-volume-row">
           <button class="vol-icon-btn" onclick="setVolumeLevel(0)" title="بی‌صدا">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 9v6h4l5 5V4l-5 5H7z"/></svg>
@@ -1476,7 +1472,6 @@
           </button>
         </div>
 
-        <!-- Share to Chat Glass Button -->
         <div class="fp-bottom-cta">
           <button class="fp-share-chat-btn" onclick="sendCurrentToChat()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -1498,8 +1493,8 @@
     if (tg) {
       tg.ready();
       tg.expand();
-      tg.setHeaderColor?.('#0b1118');
-      tg.setBackgroundColor?.('#0b1118');
+      tg.setHeaderColor?.('#0b131c');
+      tg.setBackgroundColor?.('#0b131c');
     }
 
     const initData = tg?.initData || '';
@@ -1509,12 +1504,11 @@
     let userFullName = '';
 
     function initUserProfile() {
-      const nameEl = document.getElementById('tgUserName');
       const avatarEl = document.getElementById('tgUserAvatar');
 
       if (tgUser) {
         userFullName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'کاربر';
-        nameEl.textContent = userFullName;
+        avatarEl.title = userFullName;
         avatarEl.textContent = userFullName[0] || 'U';
 
         if (tgUser.photo_url) {
@@ -1532,9 +1526,6 @@
     }
     initUserProfile();
 
-    // ===================================================================
-    // REQUEST SONG MODAL LOGIC
-    // ===================================================================
     function openRequestModal(prefillText = '') {
       const modal = document.getElementById('requestModal');
       const input = document.getElementById('modalRequestInput');
@@ -1596,9 +1587,9 @@
 
     const PLAY_SVG = '<svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
     const PAUSE_SVG = '<svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
-    const HEART_OUTLINE = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
-    const HEART_FILLED = '<svg width="19" height="19" viewBox="0 0 24 24" fill="#ff4d6d"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
-    const SEND_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
+    const HEART_OUTLINE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+    const HEART_FILLED = '<svg width="18" height="18" viewBox="0 0 24 24" fill="#ff4d6d"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
+    const SEND_SVG = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
     const TRASH_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
 
     let currentFilter = 'all';
@@ -1632,9 +1623,6 @@
       'linear-gradient(135deg, #1e3a5f, #0b1118)'
     ];
 
-    // ===================================================================
-    // HYBRID WAVEFORM + SCRUBBER
-    // ===================================================================
     const WAVE_BARS_COUNT = 52;
     let baseHeights = [];
     let waveBarsEls = [];
@@ -1820,8 +1808,9 @@
         isAdminUser = Boolean(data.is_admin);
         if (!tgUser && data.user_name) {
           userFullName = data.user_name;
-          document.getElementById('tgUserName').textContent = data.user_name;
-          document.getElementById('tgUserAvatar').textContent = data.user_name[0];
+          const av = document.getElementById('tgUserAvatar');
+          av.title = data.user_name;
+          if (!av.querySelector('img')) av.textContent = data.user_name[0];
         }
         if (isAdminUser) {
           document.getElementById('adminToggleBtn').style.display = 'inline-flex';
@@ -1965,7 +1954,7 @@
       document.getElementById('boxFav').classList.toggle('active', filter === 'fav');
       document.getElementById('boxPopular').classList.toggle('active', filter === 'popular');
 
-      const titles = { all: 'جدیدترین موزیک‌های آرشیو', popular: 'پرطرفدارترین ترک‌ها', fav: 'آهنگ‌های لایک‌شده شما' };
+      const titles = { all: 'جدیدترین موزیک‌ها', popular: 'پرطرفدارترین ترک‌ها', fav: 'آهنگ‌های لایک‌شده شما' };
       document.getElementById('sectionTitle').textContent = titles[filter] || 'موزیک‌ها';
 
       if (filter === 'fav') loadFavorites();
