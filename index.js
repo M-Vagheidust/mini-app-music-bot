@@ -22,7 +22,7 @@ let BOT_USERNAME = '';
 const COVER_CACHE = new Map();
 
 // ---------------------------------------------------------------------------
-// اتصال به دیتابیس SQLite (دقیقاً منطبق با ساختار فایل db ارسالی)
+// اتصال به دیتابیس SQLite (منطبق با ساختار gapmusic.db)
 // ---------------------------------------------------------------------------
 const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
@@ -356,7 +356,9 @@ function getUserFavorites(userId) {
     SELECT s.id, s.uid, s.title, s.performer, s.likes, s.plays
     FROM favorites f
     JOIN songs s ON s.id = f.song_id
-    WHERE f.user_id = ? AND ${ACTIVE_WHERE.replace(/available/g, 's.available').replace(/file_id/g, 's.file_id').replace(/from_chat_id/g, 's.from_chat_id').replace(/message_id/g, 's.message_id')}
+    WHERE f.user_id = ?
+      AND s.available = 1
+      AND (COALESCE(TRIM(s.file_id), '') != '' OR (s.from_chat_id IS NOT NULL AND s.message_id IS NOT NULL))
     ORDER BY f.created_at DESC
   `).all(uid);
   return { favorite_ids: items.map(s => s.id), items };
@@ -433,7 +435,6 @@ function smartSearchSongs(rawQuery, { onlyWithFileId = false, limit = 200 } = {}
   const extraFileWhere = onlyWithFileId ? " AND COALESCE(TRIM(s.file_id), '') != ''" : '';
   let candidates = [];
 
-  // ۱. جستجوی فوق‌سریع با FTS5
   try {
     const ftsQuery = searchTokens
       .slice(0, 12)
@@ -456,7 +457,6 @@ function smartSearchSongs(rawQuery, { onlyWithFileId = false, limit = 200 } = {}
     candidates = [];
   }
 
-  // ۲. Fallback با LIKE اگر عبارت خیلی کوتاه یا خاص بود
   if (!candidates.length && searchTokens.length) {
     const likeTokens = searchTokens.slice(0, 8);
     const whereOr = likeTokens.map(() => 'search_text LIKE ?').join(' OR ');
@@ -469,7 +469,6 @@ function smartSearchSongs(rawQuery, { onlyWithFileId = false, limit = 200 } = {}
     `).all(...params);
   }
 
-  // امتیازدهی و مرتب‌سازی دقیق نتایج
   const scored = [];
   for (const s of candidates) {
     const sText = (s.search_text || '').toLowerCase();
@@ -941,6 +940,11 @@ app.post('/api/send/:uid', async (req, res) => {
 const bot = new Telegraf(BOT_TOKEN);
 const userSessions = new Map();
 
+// جلوگیری از کرش شدن ربات در صورت بروز خطاهای تلگرام
+bot.catch((err, ctx) => {
+  console.error(`⚠️ خطا در پردازش ${ctx.updateType}:`, err.message);
+});
+
 function buildMainMenu(userId) {
   const activeCount = getActiveSongsCount();
   const favCount = db.prepare('SELECT COUNT(*) AS c FROM favorites WHERE user_id = ?').get(String(userId)).c;
@@ -1263,7 +1267,7 @@ bot.action(/^page_(\d+)$/, async (ctx) => {
   await ctx.answerCbQuery();
 });
 
-// دریافت فایل صوتی و ذخیره مستقیم در SQLite (تریگرها FTS5 را خودکار آپدیت می‌کنند)
+// دریافت فایل صوتی و ذخیره مستقیم در SQLite
 bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
   const msg = ctx.message || ctx.channelPost;
   if (!msg) return next();
@@ -1381,6 +1385,7 @@ bot.action('quick_request_pending', async (ctx) => {
   await ctx.answerCbQuery('✅ درخواست ثبت شد!');
 });
 
+// سرچ آنی (Inline) با بررسی معتبر بودن file_id و حالت پشتیبان بدون کرش
 bot.on('inline_query', async (ctx) => {
   const rawQ = (ctx.inlineQuery.query || '').trim();
   let songs = [];
@@ -1390,20 +1395,60 @@ bot.on('inline_query', async (ctx) => {
   } else {
     songs = db.prepare(`
       SELECT * FROM songs
-      WHERE available = 1 AND COALESCE(TRIM(file_id), '') != ''
+      WHERE available = 1
+        AND media_type = 'audio'
+        AND file_id LIKE 'CQAC%'
       ORDER BY id DESC
       LIMIT 25
     `).all();
   }
 
-  const results = songs.map(s => ({
+  const audioSongs = songs.filter(s => s.file_id && s.file_id.startsWith('CQAC'));
+
+  const audioResults = audioSongs.map(s => ({
     type: 'audio',
-    id: String(s.id),
+    id: `aud_${s.id}`,
     audio_file_id: s.file_id,
     caption: `🎵 ${s.performer} - ${s.title}`
   }));
 
-  await ctx.answerInlineQuery(results, { cache_time: 5, is_personal: true });
+  try {
+    if (audioResults.length > 0) {
+      await ctx.answerInlineQuery(audioResults, { cache_time: 5, is_personal: true });
+      return;
+    }
+  } catch (err) {
+    console.error('⚠️ Inline Audio Error (Fallback to article):', err.message);
+  }
+
+  const fallbackSongs = songs.length
+    ? songs.slice(0, 25)
+    : getSongsPage('all', 0, 25).items;
+
+  const articleResults = fallbackSongs.map(s => {
+    const deepLink = BOT_USERNAME ? `https://t.me/${BOT_USERNAME}?start=song_${s.id}` : MINI_APP_URL;
+    return {
+      type: 'article',
+      id: `art_${s.id}`,
+      title: `${s.title}`,
+      description: `${s.performer}`,
+      input_message_content: {
+        message_text: `🎵 **${s.performer} - ${s.title}**\n🎧 GapMusic`,
+        parse_mode: 'Markdown'
+      },
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '📥 دریافت فایل از ربات', url: deepLink }]
+        ]
+      }
+    };
+  });
+
+  try {
+    await ctx.answerInlineQuery(articleResults, { cache_time: 5, is_personal: true });
+  } catch (e) {
+    console.error('⚠️ Inline Fallback Error:', e.message);
+  }
 });
 
 app.listen(PORT, async () => {
