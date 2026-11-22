@@ -530,6 +530,10 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.32);
     }
     .track-cover img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+    .cover-play-btn { position:absolute; inset:0; z-index:2; display:grid; place-items:center; padding:0; border:0; background:rgba(5,14,22,.26); color:#fff; opacity:0; transform:scale(.94); transition:opacity .18s ease,transform .2s ease,background .18s ease; cursor:pointer; }
+    .cover-play-btn::before { content:""; position:absolute; width:34px; height:34px; border-radius:50%; background:rgba(36,158,229,.88); box-shadow:0 4px 14px rgba(0,0,0,.3); transition:transform .18s ease,background .18s ease; }
+    .cover-play-btn svg { position:relative; z-index:1; width:19px; height:19px; margin-left:2px; }
+    .cover-play-btn:hover::before { transform:scale(1.08); background:rgba(56,163,241,.98); }
 
     .track-meta { flex: 1; min-width: 0; cursor: pointer; }
     .track-title {
@@ -1320,6 +1324,13 @@
     html[data-player-mode="desktop"] .track-row { min-height:76px; padding:11px 14px; border-radius:17px; }
     html[data-player-mode="desktop"] .track-row:hover { background:rgba(255,255,255,.055); border-color:rgba(255,255,255,.12); }
     html[data-player-mode="desktop"] .track-cover { width:54px; height:54px; border-radius:14px; }
+    @media (hover:hover) and (pointer:fine) {
+      html[data-player-mode="desktop"] .track-cover:hover .cover-play-btn,
+      html[data-player-mode="desktop"] .track-cover:focus-within .cover-play-btn { opacity:.94; transform:scale(1); }
+    }
+    @media (hover:none) {
+      html[data-player-mode="desktop"] .cover-play-btn { opacity:.92; transform:scale(1); }
+    }
     html[data-player-mode="desktop"] .track-title { font-size:14px; }
     html[data-player-mode="desktop"] .track-artist { font-size:12px; }
     html[data-player-mode="desktop"] .bottom-nav { top:0; bottom:0; left:0; right:auto; width:86px; height:100vh; flex-direction:column; justify-content:center; gap:16px; padding:22px 10px; border-top:0; border-right:1px solid rgba(255,255,255,.08); }
@@ -2216,7 +2227,19 @@
 
     function applyImg(elId, url) {
       const el = document.getElementById(elId);
-      if (el && url) el.innerHTML = `<img src="${url}" alt="art" loading="lazy" />`;
+      if (!el || !url) return;
+      if (el.classList.contains('track-cover')) {
+        let image = el.querySelector('img');
+        if (!image) {
+          image = document.createElement('img');
+          image.alt = 'جلد آهنگ';
+          image.loading = 'lazy';
+          el.prepend(image);
+        }
+        image.src = url;
+        return;
+      }
+      el.innerHTML = `<img src="${url}" alt="art" loading="lazy" />`;
     }
 
     async function loadFavorites() {
@@ -2375,6 +2398,9 @@
           <div class="track-row ${isCurrent ? 'active' : ''}">
             <div class="track-cover" id="tr_${s.uid}" style="background:${getColor(s.id)}" onclick="playSongByIndex(${idx})">
               ${escapeHtml(s.title[0] || '🎵')}
+              <button class="cover-play-btn" id="coverPlay_${s.uid}" type="button" onclick="event.stopPropagation(); playSongByIndex(${idx})" aria-label="${isCurrent && !audio.paused ? 'مکث' : 'پخش'} ${escapeHtml(s.title)}" title="${isCurrent && !audio.paused ? 'مکث' : 'پخش'}">
+                ${isCurrent && !audio.paused ? PAUSE_SVG : PLAY_SVG}
+              </button>
             </div>
             <div class="track-meta" onclick="playSongByIndex(${idx})">
               <div class="track-title" style="display:flex;align-items:center;">${eqHtml}${escapeHtml(s.title)}</div>
