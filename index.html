@@ -27,15 +27,15 @@
   <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0b131c;
-      --bg-deep: #070c12;
-      --surface: rgba(24, 34, 46, 0.72);
+      --bg: #171020;
+      --bg-deep: #0b0710;
+      --surface: rgba(35, 25, 46, 0.78);
       --glass: rgba(255, 255, 255, 0.055);
       --glass-strong: rgba(255, 255, 255, 0.12);
       --glass-border: rgba(255, 255, 255, 0.09);
-      --tg-blue: #38a3f1;
-      --tg-blue-glow: rgba(56, 163, 241, 0.38);
-      --tg-blue-soft: rgba(56, 163, 241, 0.15);
+      --tg-blue: #a879f5;
+      --tg-blue-glow: rgba(168, 121, 245, 0.38);
+      --tg-blue-soft: rgba(168, 121, 245, 0.16);
       --danger: #ff4d6d;
       --text: #ffffff;
       --subtext: #8b9bb0;
@@ -59,7 +59,7 @@
     body {
       padding-bottom: 148px;
       background:
-        radial-gradient(circle at 22% 8%, rgba(56, 163, 241, 0.13) 0%, rgba(12, 20, 30, 0.94) 44%, var(--bg-deep) 100%);
+        radial-gradient(circle at 22% 8%, rgba(168, 121, 245, 0.14) 0%, rgba(24, 16, 34, 0.94) 44%, var(--bg-deep) 100%);
       background-color: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -1279,7 +1279,7 @@
     html[data-player-mode="desktop"] .fp-wave-section { margin:10px 0; }
     html[data-player-mode="desktop"] .waveform-track-wrap { height:38px; }
     html[data-player-mode="desktop"] .waveform-container { height:28px; gap:3px; }
-    html[data-player-mode="desktop"] .wave-bar { max-width:4px; background:rgba(130,151,169,.55); }
+    html[data-player-mode="desktop"] .wave-bar { max-width:4px; background:rgba(177,153,202,.5); }
     html[data-player-mode="desktop"] .wave-bar.played { background:var(--tg-blue); }
     html[data-player-mode="desktop"] .wave-played-line { display:none; }
     html[data-player-mode="desktop"] .wave-thumb { z-index:2; width:14px; height:14px; border:2px solid var(--bg); background:#fff; box-shadow:0 0 0 1px var(--tg-blue),0 2px 8px rgba(0,0,0,.24); }
@@ -1358,15 +1358,15 @@
     html[data-player-mode="desktop"] .desktop-player-panel {
       position:fixed; z-index:35; top:18px; right:22px; bottom:18px; display:flex; flex-direction:column; width:372px; padding:22px;
       overflow:auto; border:1px solid rgba(255,255,255,.1); border-radius:26px;
-      background:linear-gradient(160deg,rgba(25,38,53,.96),rgba(12,21,32,.97));
+      background:linear-gradient(160deg,rgba(39,27,52,.97),rgba(18,11,27,.98));
       box-shadow:0 24px 70px rgba(0,0,0,.35),inset 0 1px rgba(255,255,255,.06); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px);
     }
     .desktop-player-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:22px; }
     .desktop-player-brand { display:flex; align-items:center; gap:9px; font-size:14px; font-weight:850; letter-spacing:.2px; }
-    .desktop-player-brand-mark { display:grid; place-items:center; width:34px; height:34px; border-radius:12px; color:#fff; background:linear-gradient(145deg,#38a3f1,#287ad2); box-shadow:0 8px 20px rgba(56,163,241,.25); }
+    .desktop-player-brand-mark { display:grid; place-items:center; width:34px; height:34px; border-radius:12px; color:#fff; background:linear-gradient(145deg,#bd91ff,#7950c8); box-shadow:0 8px 20px rgba(168,121,245,.25); }
     .desktop-player-status { display:flex; align-items:center; gap:7px; color:var(--subtext); font-size:11px; }
     .desktop-player-status::before { content:""; width:7px; height:7px; border-radius:50%; background:#45d49a; box-shadow:0 0 10px rgba(69,212,154,.55); }
-    .desktop-player-art { position:relative; display:grid; place-items:center; width:100%; aspect-ratio:1; overflow:hidden; flex:none; border:1px solid rgba(255,255,255,.1); border-radius:23px; background:linear-gradient(145deg,#235779,#152537); color:rgba(255,255,255,.76); font-size:70px; box-shadow:0 18px 38px rgba(0,0,0,.24); }
+    .desktop-player-art { position:relative; display:grid; place-items:center; width:100%; aspect-ratio:1; overflow:hidden; flex:none; border:1px solid rgba(255,255,255,.1); border-radius:23px; background:linear-gradient(145deg,#62418e,#221831); color:rgba(255,255,255,.76); font-size:70px; box-shadow:0 18px 38px rgba(0,0,0,.24); }
     .desktop-player-art::after { content:""; position:absolute; inset:50% 0 0; background:linear-gradient(transparent,rgba(0,0,0,.2)); pointer-events:none; }
     .desktop-player-art img { width:100%; height:100%; object-fit:cover; }
     .desktop-track-meta { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:21px 0 16px; }
@@ -1393,7 +1393,7 @@
     .desktop-transport button { display:grid; place-items:center; width:40px; height:40px; flex:none; border:0; border-radius:14px; background:transparent; color:#d9e7f4; cursor:pointer; transition:transform .18s ease,color .18s ease,background .18s ease; }
     .desktop-transport button:hover { transform:scale(1.08); color:var(--tg-blue); background:var(--glass); }
     .desktop-transport button svg { width:21px; height:21px; }
-    .desktop-transport .desktop-main-play { width:58px; height:58px; border-radius:19px; background:linear-gradient(145deg,#44aff5,#2389dc); color:white; box-shadow:0 10px 26px rgba(56,163,241,.32); }
+    .desktop-transport .desktop-main-play { width:58px; height:58px; border-radius:19px; background:linear-gradient(145deg,#c29aff,#8053d0); color:white; box-shadow:0 10px 26px rgba(168,121,245,.32); }
     .desktop-transport .desktop-main-play:hover { color:white; background:linear-gradient(145deg,#65bdF7,#3199e8); }
     .desktop-transport .desktop-main-play svg { width:27px; height:27px; }
     .desktop-transport button.active-blue { color:var(--tg-blue); background:var(--tg-blue-soft); }
@@ -1412,6 +1412,60 @@
     .desktop-queue-title { font-size:12px; font-weight:750; }
     .desktop-queue-artist { margin-top:3px; color:var(--subtext); font-size:10px; }
     .desktop-empty-hint { margin:auto 0; padding:18px 10px; color:var(--subtext); font-size:12px; line-height:1.9; text-align:center; }
+
+    /* Modern, tactile transport controls shared by the desktop and full-screen players. */
+    .desktop-transport { gap:12px; margin:22px 0 20px; }
+    .desktop-transport button:not(.desktop-main-play) { width:44px; height:44px; border:1px solid var(--glass-border); border-radius:16px; color:#e6dcf4; background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.025)); box-shadow:inset 0 1px rgba(255,255,255,.08),0 7px 18px rgba(0,0,0,.14); backdrop-filter:blur(12px); }
+    .desktop-transport button:not(.desktop-main-play):hover { transform:translateY(-2px); color:#d8bbff; border-color:rgba(190,151,255,.4); background:rgba(168,121,245,.13); }
+    .desktop-transport button:not(.desktop-main-play):active { transform:scale(.93); }
+    .desktop-transport .desktop-main-play { width:62px; height:62px; border:1px solid rgba(255,255,255,.32); border-radius:21px; background:linear-gradient(145deg,#d1b1ff,#8251d0 72%,#7043bd); box-shadow:0 12px 28px rgba(128,79,207,.4),inset 0 1px rgba(255,255,255,.42); }
+    .desktop-transport .desktop-main-play:hover { color:white; background:linear-gradient(145deg,#ddc6ff,#9567df 72%,#8054cd); transform:translateY(-2px) scale(1.035); }
+    .desktop-transport .desktop-main-play:active { transform:scale(.95); }
+    .fp-controls { justify-content:center; gap:clamp(10px,3vw,22px); padding:8px 10px; }
+    /* Violet neon circular transport controls inspired by the supplied reference. */
+    .fp-side-ctrl,.fp-skip-ctrl { color:#e0caff; border-color:rgba(174,126,244,.38); background:linear-gradient(145deg,rgba(69,43,98,.48),rgba(19,12,31,.88)); box-shadow:inset 0 1px rgba(239,222,255,.12),0 0 17px rgba(158,103,237,.14); }
+    .fp-side-ctrl:hover,.fp-skip-ctrl:hover { color:#fff; border-color:rgba(210,176,255,.78); background:rgba(153,94,230,.24); box-shadow:0 0 23px rgba(168,121,245,.28),inset 0 1px rgba(245,230,255,.2); }
+    .fp-side-ctrl.active-blue { color:#21132f; border-color:#e2caff; background:linear-gradient(145deg,#d8baff,#9863ec); box-shadow:0 0 19px rgba(173,118,250,.42); }
+    .fp-play-circle svg { filter:none; }
+    .desktop-transport button:not(.desktop-main-play) { color:#e0caff; border-color:rgba(174,126,244,.34); background:linear-gradient(145deg,rgba(69,43,98,.48),rgba(19,12,31,.88)); box-shadow:inset 0 1px rgba(239,222,255,.12),0 0 17px rgba(158,103,237,.12); }
+    .desktop-transport button:not(.desktop-main-play):hover { color:#fff; border-color:rgba(210,176,255,.78); background:rgba(153,94,230,.24); }
+    .desktop-transport button.active-blue { color:#21132f; border-color:#e2caff; background:linear-gradient(145deg,#d8baff,#9863ec); box-shadow:0 0 19px rgba(173,118,250,.42); }
+    .desktop-transport .desktop-main-play { color:#190f25; border-color:#ead9ff; border-radius:50%; background:linear-gradient(145deg,#e2c9ff,#a875f0 72%,#8752d6); box-shadow:0 0 0 5px rgba(168,121,245,.14),0 0 30px rgba(168,121,245,.44),inset 0 1px rgba(255,255,255,.78); }
+    .desktop-transport .desktop-main-play:hover { color:#190f25; background:linear-gradient(145deg,#efdeff,#bd91ff 72%,#9b6be9); }
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .desktop-transport button:not(.desktop-main-play) { color:#7447a8; border-color:rgba(139,91,190,.28); background:linear-gradient(145deg,rgba(255,255,255,.96),rgba(244,235,255,.92)); box-shadow:inset 0 1px #fff,0 5px 16px rgba(88,55,120,.1); }
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .desktop-transport button.active-blue { color:#fff; border-color:#a97bdd; background:linear-gradient(145deg,#b47be8,#8150bd); }
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .desktop-transport .desktop-main-play { color:#fff; border-color:#e7d4ff; border-radius:50%; background:linear-gradient(145deg,#c89cf2,#9058cf); box-shadow:0 0 0 5px rgba(145,91,193,.1),0 9px 26px rgba(105,67,144,.22),inset 0 1px #fff; }
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .fp-side-ctrl,html[data-player-mode="desktop"][data-desktop-theme="light"] .fp-skip-ctrl { color:#ddffff; }
+
+    .fp-side-ctrl,.fp-skip-ctrl { width:46px; height:46px; border:1px solid rgba(255,255,255,.13); border-radius:16px; background:rgba(255,255,255,.075); color:rgba(255,255,255,.82); box-shadow:inset 0 1px rgba(255,255,255,.09),0 8px 18px rgba(0,0,0,.16); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); transition:transform .28s var(--ease-spring),color .24s ease,background .24s ease,border-color .24s ease,box-shadow .24s ease; }
+    .fp-side-ctrl:hover,.fp-skip-ctrl:hover { transform:translateY(-2px); color:#e2caff; border-color:rgba(190,151,255,.35); background:rgba(168,121,245,.15); }
+    .fp-side-ctrl.active-blue { color:#d5b6ff; border-color:rgba(190,151,255,.4); background:rgba(168,121,245,.2); box-shadow:0 0 20px rgba(168,121,245,.17); }
+    .fp-play-circle { width:74px; height:74px; border:1px solid rgba(255,255,255,.38); border-radius:25px; background:linear-gradient(145deg,#d1b1ff,#8251d0 72%,#7043bd); box-shadow:0 14px 34px rgba(113,67,184,.38),inset 0 1px rgba(255,255,255,.4); transition:transform .32s var(--ease-spring),background .25s ease,box-shadow .25s ease; }
+    .fp-play-circle:hover { transform:translateY(-2px) scale(1.04); background:linear-gradient(145deg,#dfcaff,#9669df 72%,#8155ca); box-shadow:0 17px 38px rgba(137,93,209,.46),inset 0 1px rgba(255,255,255,.48); }
+    .fp-play-circle:active { transform:scale(.94); }
+    .fp-play-circle svg { filter:drop-shadow(0 2px 3px rgba(51,29,84,.22)); }
+    .fp-top-text-btn { direction:ltr; gap:7px; }
+    .fp-top-text-btn svg { flex:none; transform:translateX(-5px) rotate(180deg); transition:transform .25s var(--ease-spring); }
+    .fp-top-text-btn:hover svg { transform:translateX(-8px) rotate(180deg); }
+
+    .desktop-player-panel,.desktop-player-art,.desktop-queue-item,.desktop-main-play { transition:background-color .35s ease,border-color .35s ease,box-shadow .35s ease,transform .45s cubic-bezier(.22,1,.36,1),opacity .35s ease; }
+    .desktop-player-panel.is-playing .desktop-player-art { animation:artFloat 5s ease-in-out infinite; }
+    @keyframes artFloat { 0%,100% { transform:translateY(0) scale(1); } 50% { transform:translateY(-3px) scale(1.008); } }
+    .desktop-play-options { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:12px; }
+    .desktop-option-btn,.desktop-speed-select { min-height:36px; padding:0 11px; border:1px solid var(--glass-border); border-radius:12px; background:var(--glass); color:var(--text); font:inherit; font-size:11px; cursor:pointer; transition:background .25s ease,border-color .25s ease,transform .25s var(--ease-spring); }
+    .desktop-speed-select { min-width:88px; padding:0 30px 0 12px; color-scheme:dark; appearance:none; -webkit-appearance:none; text-align:center; text-align-last:center; direction:ltr; background-color:rgba(35,25,46,.96); background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23d9c7f4' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; }
+    .desktop-speed-select option { color:#f7f2ff; background:#21172d; }
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .desktop-speed-select { color-scheme:light; background-color:#fffdf9; color:#352a20; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23684c36' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E"); }
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .desktop-speed-select option { color:#352a20; background:#fffdf9; }
+    .desktop-option-btn:hover,.desktop-speed-select:hover { transform:translateY(-1px); border-color:var(--tg-blue); }
+    .desktop-option-btn.active-blue { color:var(--tg-blue); background:var(--tg-blue-soft); }
+    .desktop-queue-list { display:flex; flex-direction:column; gap:7px; margin-top:9px; max-height:180px; overflow:auto; scrollbar-width:thin; }
+    .desktop-queue-list:empty { display:none; }
+    .desktop-queue-list .desktop-queue-item { padding:7px; cursor:pointer; transition:transform .25s var(--ease-spring),background .25s ease,border-color .25s ease; }
+    .desktop-queue-list .desktop-queue-item:hover { transform:translateX(-3px); border-color:var(--tg-blue); }
+    .desktop-queue-list .desktop-queue-item.is-current { border-color:var(--tg-blue); background:var(--tg-blue-soft); }
+    @media (prefers-reduced-motion: reduce) { .desktop-player-panel.is-playing .desktop-player-art { animation:none; } .desktop-player-panel,.desktop-player-panel *, .desktop-player-panel *::before,.desktop-player-panel *::after { scroll-behavior:auto !important; transition-duration:.01ms !important; } }
+
 
     html[data-player-mode="desktop"][data-desktop-theme="light"] {
       --bg:#f5f0e8; --bg-deep:#e9e1d6; --surface:rgba(255,253,249,.88); --glass:rgba(139,112,87,.055);
@@ -1602,11 +1656,18 @@
       <input class="desktop-volume-range" id="desktopVolume" type="range" min="0" max="1" step="0.01" value="0.85" oninput="setVolumeLevel(this.value)" aria-label="بلندی صدا" />
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
     </div>
-    <div class="desktop-queue-head"><span>در ادامه</span><span>صف پخش</span></div>
+    <div class="desktop-play-options">
+      <button type="button" class="desktop-option-btn" id="desktopLoopAllBtn" onclick="toggleLoopAll()" aria-pressed="false" title="تکرار کل صف">تکرار صف</button>
+      <label for="desktopSpeed" style="display:flex;align-items:center;gap:7px;color:var(--subtext);font-size:11px">سرعت
+        <select class="desktop-speed-select" id="desktopSpeed" onchange="setPlaybackRate(this.value)" aria-label="سرعت پخش"><option value="0.75">۰٫۷۵×</option><option value="1" selected>۱×</option><option value="1.25">۱٫۲۵×</option><option value="1.5">۱٫۵×</option><option value="1.75">۱٫۷۵×</option><option value="2">۲×</option></select>
+      </label>
+    </div>
+    <div class="desktop-queue-head"><span>در ادامه</span><span id="desktopQueueCount">صف پخش</span></div>
     <div class="desktop-queue-item" id="desktopQueueItem">
       <div class="desktop-queue-art" id="desktopQueueArt">♫</div>
       <div class="desktop-queue-copy"><div class="desktop-queue-title" id="desktopQueueTitle">انتخاب آهنگ بعدی</div><div class="desktop-queue-artist" id="desktopQueueArtist">از فهرست آهنگ‌ها پخش کن</div></div>
     </div>
+    <div class="desktop-queue-list" id="desktopQueueList" aria-label="فهرست صف پخش"></div>
   </aside>
 
   <!-- Centered Luminous Glass Hero Card -->
@@ -1784,7 +1845,7 @@
             <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
           </button>
           <button class="fp-play-circle" id="fpPlayBtn" onclick="togglePlay()">
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6.5v11l9-5.5-9-5.5Z" fill="currentColor" stroke="none"/></svg>
           </button>
           <button class="fp-skip-ctrl" onclick="playNext()" title="بعدی">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
@@ -1971,7 +2032,7 @@
       }
     }
 
-    const PLAY_SVG = '<svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+    const PLAY_SVG = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6.5v11l9-5.5-9-5.5Z" fill="currentColor" stroke="none"/></svg>';
     const PAUSE_SVG = '<svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
     const HEART_OUTLINE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
     const HEART_FILLED = '<svg width="18" height="18" viewBox="0 0 24 24" fill="#ff4d6d"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
@@ -1989,6 +2050,7 @@
     let adminModeActive = false;
 
     let isRepeat = false;
+    let isLoopAll = false;
     let isShuffle = false;
     let showRemainingTime = true;
 
@@ -1999,8 +2061,10 @@
 
     const audio = document.getElementById('audioPlayer');
     audio.volume = 0.85;
+    try { const savedRate = Number(localStorage.getItem('gapmusic_playback_rate')); if (savedRate >= 0.5 && savedRate <= 2) audio.playbackRate = savedRate; } catch (_) {}
     document.getElementById('volFill').style.width = '85%';
     document.getElementById('desktopVolume').value = '0.85';
+    document.getElementById('desktopSpeed').value = String(audio.playbackRate || 1);
 
     const COLORS = [
       'linear-gradient(135deg, #2b5876, #16222a)',
@@ -2155,6 +2219,19 @@
       showToast(isRepeat ? '🔁 تکرار این ترک فعال شد' : 'تکرار غیرفعال شد');
     }
 
+    function toggleLoopAll() {
+      isLoopAll = !isLoopAll;
+      const button = document.getElementById('desktopLoopAllBtn');
+      button.classList.toggle('active-blue', isLoopAll);
+      button.setAttribute('aria-pressed', String(isLoopAll));
+      showToast(isLoopAll ? 'تکرار صف پخش فعال شد' : 'تکرار صف پخش غیرفعال شد');
+    }
+    function setPlaybackRate(value) {
+      const rate = Math.max(0.5, Math.min(2, Number(value) || 1));
+      audio.playbackRate = rate;
+      try { localStorage.setItem('gapmusic_playback_rate', String(rate)); } catch (_) {}
+      document.getElementById('desktopSpeed').value = String(rate);
+    }
     function toggleShuffle() {
       isShuffle = !isShuffle;
       document.getElementById('fpShuffleBtn').classList.toggle('active-blue', isShuffle);
@@ -2573,6 +2650,14 @@
     function updateDesktopQueue() {
       const currentIndex = currentSongs.findIndex(song => currentSong && song.uid === currentSong.uid);
       const queuedSong = currentSongs.length > 1 && currentIndex >= 0 ? currentSongs[(currentIndex + 1) % currentSongs.length] : null;
+      const queueCount = document.getElementById('desktopQueueCount');
+      if (queueCount) queueCount.textContent = String(currentSongs.length) + ' آهنگ';
+      const queueList = document.getElementById('desktopQueueList');
+      if (queueList) queueList.innerHTML = currentSongs.slice(0, 12).map((song, index) => {
+        const isCurrent = currentSong && song.uid === currentSong.uid;
+        return '<button type="button" class="desktop-queue-item' + (isCurrent ? ' is-current' : '') + '" onclick="playSongByIndex(' + index + ')" aria-label="پخش ' + escapeHtml(song.title) + '">' +
+          '<span class="desktop-queue-art">' + escapeHtml((song.title || '♫').slice(0,1)) + '</span><span class="desktop-queue-copy"><span class="desktop-queue-title">' + escapeHtml(song.title) + '</span><span class="desktop-queue-artist">' + escapeHtml(song.performer || '') + '</span></span></button>';
+      }).join('');
       const title = document.getElementById('desktopQueueTitle');
       const artist = document.getElementById('desktopQueueArtist');
       const art = document.getElementById('desktopQueueArt');
@@ -2715,6 +2800,7 @@
       document.getElementById('fpPlayBtn').innerHTML = PAUSE_SVG;
       document.getElementById('desktopPlayBtn').innerHTML = PAUSE_SVG;
       document.getElementById('desktopPlayerStatus').textContent = 'در حال پخش';
+      document.getElementById('desktopPlayerPanel').classList.add('is-playing');
       document.getElementById('fpArt').classList.add('playing-scale');
       document.getElementById('fpLiveWave').classList.add('animating');
       if (!rafId) animateWaveform();
@@ -2726,6 +2812,7 @@
       document.getElementById('fpPlayBtn').innerHTML = PLAY_SVG;
       document.getElementById('desktopPlayBtn').innerHTML = PLAY_SVG;
       document.getElementById('desktopPlayerStatus').textContent = currentSong ? 'متوقف‌شده' : 'آمادهٔ پخش';
+      document.getElementById('desktopPlayerPanel').classList.remove('is-playing');
       document.getElementById('fpArt').classList.remove('playing-scale');
       document.getElementById('fpLiveWave').classList.remove('animating');
       renderSongs();
@@ -2735,8 +2822,11 @@
       if (isRepeat) {
         audio.currentTime = 0;
         audio.play().catch(() => {});
-      } else {
+      } else if (isLoopAll) {
         playNext();
+      } else {
+        document.getElementById('desktopPlayerStatus').textContent = 'پایان آهنگ';
+        document.getElementById('desktopPlayerPanel').classList.remove('is-playing');
       }
     });
 
