@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>GapMusic • Telegram Mini App</title>
+  <title>GapMusic • آرشیو آنلاین موسیقی</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     (() => {
@@ -11,8 +11,10 @@
         const saved = localStorage.getItem('gapmusic_player_mode');
         const desktop = saved === 'desktop' || (saved !== 'mobile' && window.matchMedia('(min-width: 960px)').matches);
         document.documentElement.dataset.playerMode = desktop ? 'desktop' : 'mobile';
+        document.documentElement.dataset.desktopTheme = localStorage.getItem('gapmusic_desktop_theme') === 'light' ? 'light' : 'dark';
       } catch (_) {
         document.documentElement.dataset.playerMode = window.matchMedia('(min-width: 960px)').matches ? 'desktop' : 'mobile';
+        document.documentElement.dataset.desktopTheme = 'dark';
       }
     })();
   </script>
@@ -1298,6 +1300,135 @@
       .player-mode-btn { padding:0 9px; }
       .player-mode-btn span { display:none; }
     }
+
+    /* Desktop listening layout. Mobile keeps the original mini-app layout. */
+    html[data-player-mode="desktop"] body { padding:0 416px 30px 86px; }
+    html[data-player-mode="desktop"] .app-header { padding:14px 28px 10px; }
+    html[data-player-mode="desktop"] .header-top,
+    html[data-player-mode="desktop"] .search-bar-row,
+    html[data-player-mode="desktop"] .admin-bar,
+    html[data-player-mode="desktop"] .section-heading,
+    html[data-player-mode="desktop"] .track-list,
+    html[data-player-mode="desktop"] .load-more { width:100%; max-width:1120px; margin-left:auto; margin-right:auto; }
+    html[data-player-mode="desktop"] .hero-banner,
+    html[data-player-mode="desktop"] .quick-boxes-grid { display:none; }
+    html[data-player-mode="desktop"] .app-header { max-width:none; }
+    html[data-player-mode="desktop"] .admin-bar { margin-top:10px; }
+    html[data-player-mode="desktop"] .section-heading { padding:24px 8px 12px; font-size:18px; }
+    html[data-player-mode="desktop"] .section-heading span { font-size:12px; }
+    html[data-player-mode="desktop"] .track-list { display:grid; grid-template-columns:minmax(0,1fr); gap:9px; padding:0 4px; }
+    html[data-player-mode="desktop"] .track-row { min-height:76px; padding:11px 14px; border-radius:17px; }
+    html[data-player-mode="desktop"] .track-row:hover { background:rgba(255,255,255,.055); border-color:rgba(255,255,255,.12); }
+    html[data-player-mode="desktop"] .track-cover { width:54px; height:54px; border-radius:14px; }
+    html[data-player-mode="desktop"] .track-title { font-size:14px; }
+    html[data-player-mode="desktop"] .track-artist { font-size:12px; }
+    html[data-player-mode="desktop"] .bottom-nav { top:0; bottom:0; left:0; right:auto; width:86px; height:100vh; flex-direction:column; justify-content:center; gap:16px; padding:22px 10px; border-top:0; border-right:1px solid rgba(255,255,255,.08); }
+    html[data-player-mode="desktop"] .nav-item { flex:0 0 auto; width:100%; height:auto; padding:10px 4px; gap:6px; border-radius:14px; font-size:10.5px; }
+    html[data-player-mode="desktop"] .nav-item.active { background:var(--tg-blue-soft); }
+    html[data-player-mode="desktop"] .nav-center-btn { width:48px; height:48px; margin:0; flex:0 0 auto; }
+    html[data-player-mode="desktop"] .sp-mini-player { display:none; }
+    html[data-player-mode="desktop"] .player-mode-btn { min-width:106px; }
+    html[data-player-mode="desktop"] .desktop-theme-switch { display:inline-flex; }
+
+    .desktop-theme-switch { display:none; align-items:center; gap:3px; padding:4px; border:1px solid var(--glass-border); border-radius:999px; background:var(--glass); }
+    .desktop-theme-switch button { min-height:31px; padding:4px 11px; border:0; border-radius:999px; background:transparent; color:var(--subtext); font-size:11px; font-weight:700; cursor:pointer; transition:background .2s ease,color .2s ease,transform .2s ease; }
+    .desktop-theme-switch button:hover { transform:translateY(-1px); }
+    .desktop-theme-switch button[aria-pressed="true"] { color:#fff; background:var(--tg-blue); box-shadow:0 4px 14px var(--tg-blue-glow); }
+
+    .desktop-player-panel { display:none; }
+    html[data-player-mode="desktop"] .desktop-player-panel {
+      position:fixed; z-index:35; top:18px; right:22px; bottom:18px; display:flex; flex-direction:column; width:372px; padding:22px;
+      overflow:auto; border:1px solid rgba(255,255,255,.1); border-radius:26px;
+      background:linear-gradient(160deg,rgba(25,38,53,.96),rgba(12,21,32,.97));
+      box-shadow:0 24px 70px rgba(0,0,0,.35),inset 0 1px rgba(255,255,255,.06); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px);
+    }
+    .desktop-player-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:22px; }
+    .desktop-player-brand { display:flex; align-items:center; gap:9px; font-size:14px; font-weight:850; letter-spacing:.2px; }
+    .desktop-player-brand-mark { display:grid; place-items:center; width:34px; height:34px; border-radius:12px; color:#fff; background:linear-gradient(145deg,#38a3f1,#287ad2); box-shadow:0 8px 20px rgba(56,163,241,.25); }
+    .desktop-player-status { display:flex; align-items:center; gap:7px; color:var(--subtext); font-size:11px; }
+    .desktop-player-status::before { content:""; width:7px; height:7px; border-radius:50%; background:#45d49a; box-shadow:0 0 10px rgba(69,212,154,.55); }
+    .desktop-player-art { position:relative; display:grid; place-items:center; width:100%; aspect-ratio:1; overflow:hidden; flex:none; border:1px solid rgba(255,255,255,.1); border-radius:23px; background:linear-gradient(145deg,#235779,#152537); color:rgba(255,255,255,.76); font-size:70px; box-shadow:0 18px 38px rgba(0,0,0,.24); }
+    .desktop-player-art::after { content:""; position:absolute; inset:50% 0 0; background:linear-gradient(transparent,rgba(0,0,0,.2)); pointer-events:none; }
+    .desktop-player-art img { width:100%; height:100%; object-fit:cover; }
+    .desktop-track-meta { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:21px 0 16px; }
+    .desktop-track-copy { min-width:0; text-align:right; }
+    .desktop-track-title { overflow:hidden; color:var(--text); font-size:20px; font-weight:850; text-overflow:ellipsis; white-space:nowrap; }
+    .desktop-track-artist { margin-top:4px; overflow:hidden; color:var(--subtext); font-size:13px; text-overflow:ellipsis; white-space:nowrap; }
+    .desktop-fav-btn { display:grid; place-items:center; width:43px; height:43px; flex:none; border:1px solid var(--glass-border); border-radius:15px; background:var(--glass); color:var(--subtext); cursor:pointer; transition:transform .2s ease,background .2s ease,color .2s ease; }
+    .desktop-fav-btn:hover { transform:scale(1.06); color:#ff6680; background:rgba(255,77,109,.1); }
+    .desktop-fav-btn svg { width:20px; height:20px; }
+    .desktop-seek-block { margin-top:3px; }
+    .desktop-seek-range { --seek-progress:0%; width:100%; height:7px; margin:0; appearance:none; border-radius:99px; outline:none; background:linear-gradient(to left,var(--tg-blue) 0%,var(--tg-blue) var(--seek-progress),rgba(255,255,255,.16) var(--seek-progress),rgba(255,255,255,.16) 100%); cursor:pointer; direction:ltr; }
+    .desktop-seek-range::-webkit-slider-thumb { width:15px; height:15px; appearance:none; border:3px solid #fff; border-radius:50%; background:var(--tg-blue); box-shadow:0 2px 10px rgba(56,163,241,.5); }
+    .desktop-seek-range::-moz-range-thumb { width:10px; height:10px; border:3px solid #fff; border-radius:50%; background:var(--tg-blue); box-shadow:0 2px 10px rgba(56,163,241,.5); }
+    .desktop-player-times { display:flex; justify-content:space-between; direction:ltr; margin-top:8px; color:var(--subtext); font-size:10px; font-variant-numeric:tabular-nums; }
+    .desktop-transport { display:flex; align-items:center; justify-content:center; gap:19px; margin:24px 0 23px; }
+    .desktop-transport button { display:grid; place-items:center; width:40px; height:40px; flex:none; border:0; border-radius:14px; background:transparent; color:#d9e7f4; cursor:pointer; transition:transform .18s ease,color .18s ease,background .18s ease; }
+    .desktop-transport button:hover { transform:scale(1.08); color:var(--tg-blue); background:var(--glass); }
+    .desktop-transport button svg { width:21px; height:21px; }
+    .desktop-transport .desktop-main-play { width:58px; height:58px; border-radius:19px; background:linear-gradient(145deg,#44aff5,#2389dc); color:white; box-shadow:0 10px 26px rgba(56,163,241,.32); }
+    .desktop-transport .desktop-main-play:hover { color:white; background:linear-gradient(145deg,#65bdF7,#3199e8); }
+    .desktop-transport .desktop-main-play svg { width:27px; height:27px; }
+    .desktop-transport button.active-blue { color:var(--tg-blue); background:var(--tg-blue-soft); }
+    .desktop-volume-row { display:flex; align-items:center; gap:12px; padding:13px 0 20px; border-top:1px solid var(--glass-border); border-bottom:1px solid var(--glass-border); }
+    .desktop-volume-row svg { width:17px; height:17px; color:var(--subtext); }
+    .desktop-volume-range { width:100%; height:4px; appearance:none; border-radius:99px; background:linear-gradient(to right,var(--tg-blue) 85%,rgba(255,255,255,.18) 85%); cursor:pointer; direction:ltr; }
+    .desktop-volume-range::-webkit-slider-thumb { width:12px; height:12px; appearance:none; border:2px solid #fff; border-radius:50%; background:var(--tg-blue); }
+    .desktop-volume-range::-moz-range-thumb { width:8px; height:8px; border:2px solid #fff; border-radius:50%; background:var(--tg-blue); }
+    .desktop-queue-head { display:flex; align-items:center; justify-content:space-between; margin:19px 0 11px; font-size:13px; font-weight:800; }
+    .desktop-queue-head span:last-child { color:var(--subtext); font-size:10px; font-weight:500; }
+    .desktop-queue-item { display:flex; align-items:center; gap:11px; min-width:0; padding:10px; border:1px solid var(--glass-border); border-radius:15px; background:var(--glass); }
+    .desktop-queue-art { display:grid; place-items:center; width:42px; height:42px; flex:none; overflow:hidden; border-radius:11px; background:linear-gradient(145deg,#235779,#152537); color:#fff; }
+    .desktop-queue-art img { width:100%; height:100%; object-fit:cover; }
+    .desktop-queue-copy { min-width:0; flex:1; text-align:right; }
+    .desktop-queue-title,.desktop-queue-artist { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .desktop-queue-title { font-size:12px; font-weight:750; }
+    .desktop-queue-artist { margin-top:3px; color:var(--subtext); font-size:10px; }
+    .desktop-empty-hint { margin:auto 0; padding:18px 10px; color:var(--subtext); font-size:12px; line-height:1.9; text-align:center; }
+
+    html[data-player-mode="desktop"][data-desktop-theme="light"] body { color:#162638; background:radial-gradient(ellipse at 14% 0%,rgba(56,163,241,.12),transparent 40%),#edf3f8; }
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .app-header { background:rgba(244,248,252,.92); border-bottom-color:rgba(26,52,76,.1); }
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .brand-name,
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .section-heading,
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .track-title { color:#162638; }
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .brand-sub,
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .track-artist { color:#62768b; }
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .sp-search-bar,
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .track-row,
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .admin-bar { background:rgba(255,255,255,.8); border-color:rgba(28,60,88,.11); color:#162638; }
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .bottom-nav { background:rgba(246,250,253,.96); border-right-color:rgba(26,52,76,.1); }
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .nav-item { color:#667b91; }
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .nav-item.active { color:#167bc1; background:rgba(56,163,241,.12); }
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .desktop-player-panel { color:#172b3e; border-color:rgba(26,52,76,.1); background:linear-gradient(160deg,rgba(255,255,255,.98),rgba(239,246,251,.98)); box-shadow:0 24px 60px rgba(34,69,98,.14); }
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .desktop-player-title,
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .desktop-track-title { color:#162638; }
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .desktop-track-artist,
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .desktop-player-status,
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .desktop-player-times,
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .desktop-queue-artist { color:#6b8094; }
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .desktop-fav-btn,
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .desktop-queue-item { color:#536b80; border-color:rgba(26,52,76,.1); background:rgba(24,71,105,.045); }
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .desktop-transport button { color:#496176; }
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .desktop-transport .desktop-main-play { color:#fff; }
+    html[data-player-mode="desktop"][data-desktop-theme="light"] .desktop-volume-row { border-color:rgba(26,52,76,.1); }
+
+    @media (max-width:1180px) {
+      html[data-player-mode="desktop"] body { padding-right:354px; padding-left:72px; }
+      html[data-player-mode="desktop"] .desktop-player-panel { right:14px; width:322px; padding:18px; }
+      html[data-player-mode="desktop"] .bottom-nav { width:72px; }
+      html[data-player-mode="desktop"] .desktop-transport { gap:12px; }
+    }
+    @media (max-width:940px) {
+      html[data-player-mode="desktop"] body { padding:0 0 112px; }
+      html[data-player-mode="desktop"] .desktop-player-panel { display:none; }
+      html[data-player-mode="desktop"] .bottom-nav { top:auto; bottom:0; left:0; right:0; width:100%; height:72px; flex-direction:row; justify-content:space-around; gap:0; padding:8px 10px calc(8px + env(safe-area-inset-bottom)); border-right:0; border-top:1px solid rgba(255,255,255,.08); }
+      html[data-player-mode="desktop"] .sp-mini-player { display:flex; width:calc(100% - 24px); max-width:600px; left:50%; bottom:80px; transform:translate(-50%,150%); }
+      html[data-player-mode="desktop"] .sp-mini-player.visible { transform:translate(-50%,0); opacity:1; }
+      html[data-player-mode="desktop"][data-desktop-theme="light"] .bottom-nav { border-top-color:rgba(26,52,76,.1); }
+    }
+    html[data-player-mode="desktop"] *, html[data-player-mode="desktop"] *::before, html[data-player-mode="desktop"] *::after { font-family:'Vazirmatn',-apple-system,BlinkMacSystemFont,sans-serif; }
+    html[data-player-mode="desktop"] .desktop-transport { direction:ltr; }
+    html[data-player-mode="desktop"] .desktop-seek-range { background:linear-gradient(to right,var(--tg-blue) 0%,var(--tg-blue) var(--seek-progress),rgba(255,255,255,.16) var(--seek-progress),rgba(255,255,255,.16) 100%); }
   </style>
 </head>
 <body>
@@ -1337,15 +1468,19 @@
         <div class="brand-titles">
           <div class="brand-name-row">
             <div class="brand-name">GAPMUSIC</div>
-            <span class="verified-badge" title="Telegram Mini App">
+            <span class="verified-badge" title="GapMusic Music Player">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.39 1.98 3.09-.33 1.24 2.86 2.86 1.24-.33 3.09L23.23 13l-1.98 2.39.33 3.09-2.86 1.24-1.24 2.86-3.09-.33L12 24l-2.39-1.98-3.09.33-1.24-2.86-2.86-1.24.33-3.09L.77 13l1.98-2.39-.33-3.09 2.86-1.24 1.24-2.86 3.09.33L12 2zm-1.2 14.2l5.8-5.8-1.4-1.4-4.4 4.4-2.2-2.2-1.4 1.4 3.6 3.6z"/></svg>
             </span>
           </div>
-          <div class="brand-sub">Telegram Mini App</div>
+          <div class="brand-sub">آرشیو آنلاین موسیقی</div>
         </div>
       </div>
 
       <div class="header-left-group">
+        <div class="desktop-theme-switch" role="group" aria-label="تم دسکتاپ">
+          <button type="button" id="desktopDarkTheme" onclick="setDesktopTheme('dark')" aria-pressed="true">تیره</button>
+          <button type="button" id="desktopLightTheme" onclick="setDesktopTheme('light')" aria-pressed="false">روشن</button>
+        </div>
         <button class="player-mode-btn" id="playerModeToggle" type="button" onclick="cyclePlayerMode()" aria-label="حالت نمایش خودکار" aria-pressed="false" title="تغییر حالت نمایش">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg>
           <span id="playerModeLabel">خودکار</span>
@@ -1367,6 +1502,44 @@
       <button class="admin-mini-btn" id="adminToggleBtn" onclick="toggleAdminMode()">🛡️ ادمین</button>
     </div>
   </header>
+
+  <aside class="desktop-player-panel" id="desktopPlayerPanel" aria-label="پخش‌کنندهٔ دسکتاپ">
+    <div class="desktop-player-head">
+      <div class="desktop-player-brand"><span class="desktop-player-brand-mark">♫</span><span>پخش‌کننده</span></div>
+      <div class="desktop-player-status" id="desktopPlayerStatus">آمادهٔ پخش</div>
+    </div>
+    <div class="desktop-player-art" id="desktopArt" aria-label="تصویر جلد آهنگ">♫</div>
+    <div class="desktop-track-meta">
+      <div class="desktop-track-copy">
+        <div class="desktop-track-title" id="desktopTitle">یک آهنگ انتخاب کن</div>
+        <div class="desktop-track-artist" id="desktopArtist">موسیقی دلخواهت اینجاست</div>
+      </div>
+      <button class="desktop-fav-btn" id="desktopFavBtn" onclick="toggleCurrentFav()" title="افزودن به پلی‌لیست من" aria-label="افزودن به پلی‌لیست من">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </button>
+    </div>
+    <div class="desktop-seek-block">
+      <input class="desktop-seek-range" id="desktopSeek" type="range" min="0" max="1000" value="0" aria-label="موقعیت پخش" oninput="seekDesktopPlayer(this.value)" />
+      <div class="desktop-player-times"><span id="desktopCurrentTime">0:00</span><span id="desktopDuration">0:00</span></div>
+    </div>
+    <div class="desktop-transport" aria-label="کنترل‌های پخش">
+      <button id="desktopRepeatBtn" onclick="toggleRepeat()" title="تکرار" aria-label="تکرار"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
+      <button onclick="playPrev()" title="آهنگ قبلی" aria-label="آهنگ قبلی"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg></button>
+      <button class="desktop-main-play" id="desktopPlayBtn" onclick="togglePlay()" title="پخش" aria-label="پخش"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+      <button onclick="playNext()" title="آهنگ بعدی" aria-label="آهنگ بعدی"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg></button>
+      <button id="desktopShuffleBtn" onclick="toggleShuffle()" title="پخش تصادفی" aria-label="پخش تصادفی"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
+    </div>
+    <div class="desktop-volume-row">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 9v6h4l5 5V4l-5 5H7z"/></svg>
+      <input class="desktop-volume-range" id="desktopVolume" type="range" min="0" max="1" step="0.01" value="0.85" oninput="setVolumeLevel(this.value)" aria-label="بلندی صدا" />
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+    </div>
+    <div class="desktop-queue-head"><span>در ادامه</span><span>صف پخش</span></div>
+    <div class="desktop-queue-item" id="desktopQueueItem">
+      <div class="desktop-queue-art" id="desktopQueueArt">♫</div>
+      <div class="desktop-queue-copy"><div class="desktop-queue-title" id="desktopQueueTitle">انتخاب آهنگ بعدی</div><div class="desktop-queue-artist" id="desktopQueueArtist">از فهرست آهنگ‌ها پخش کن</div></div>
+    </div>
+  </aside>
 
   <!-- Centered Luminous Glass Hero Card -->
   <section class="hero-banner">
@@ -1616,6 +1789,16 @@
       if (nextPreference === 'auto') showToast('نمایش خودکار بر اساس اندازه صفحه فعال شد');
       else showToast('حالت ' + (nextPreference === 'desktop' ? 'دسکتاپ' : 'موبایل') + ' فعال شد');
     }
+    function setDesktopTheme(theme) {
+      const selected = theme === 'light' ? 'light' : 'dark';
+      document.documentElement.dataset.desktopTheme = selected;
+      try { localStorage.setItem('gapmusic_desktop_theme', selected); } catch (_) {}
+      document.getElementById('desktopDarkTheme').setAttribute('aria-pressed', String(selected === 'dark'));
+      document.getElementById('desktopLightTheme').setAttribute('aria-pressed', String(selected === 'light'));
+    }
+    const savedDesktopTheme = document.documentElement.dataset.desktopTheme === 'light' ? 'light' : 'dark';
+    document.getElementById('desktopDarkTheme').setAttribute('aria-pressed', String(savedDesktopTheme === 'dark'));
+    document.getElementById('desktopLightTheme').setAttribute('aria-pressed', String(savedDesktopTheme === 'light'));
     applyPlayerMode();
     window.addEventListener('resize', () => {
       if (readPlayerModePreference() === 'auto') applyPlayerMode();
@@ -1749,6 +1932,7 @@
     const audio = document.getElementById('audioPlayer');
     audio.volume = 0.85;
     document.getElementById('volFill').style.width = '85%';
+    document.getElementById('desktopVolume').value = '0.85';
 
     const COLORS = [
       'linear-gradient(135deg, #2b5876, #16222a)',
@@ -1880,17 +2064,21 @@
       try { audio.volume = v; } catch (e) {}
       document.getElementById('volSlider').value = v;
       document.getElementById('volFill').style.width = `${Math.round(v * 100)}%`;
+      document.getElementById('desktopVolume').value = v;
+      document.getElementById('desktopVolume').style.background = `linear-gradient(to right,var(--tg-blue) ${Math.round(v * 100)}%,rgba(255,255,255,.18) ${Math.round(v * 100)}%)`;
     }
 
     function toggleRepeat() {
       isRepeat = !isRepeat;
       document.getElementById('fpRepeatBtn').classList.toggle('active-blue', isRepeat);
+      document.getElementById('desktopRepeatBtn').classList.toggle('active-blue', isRepeat);
       showToast(isRepeat ? '🔁 تکرار این ترک فعال شد' : 'تکرار غیرفعال شد');
     }
 
     function toggleShuffle() {
       isShuffle = !isShuffle;
       document.getElementById('fpShuffleBtn').classList.toggle('active-blue', isShuffle);
+      document.getElementById('desktopShuffleBtn').classList.toggle('active-blue', isShuffle);
       showToast(isShuffle ? '🔀 پخش تصادفی فعال شد' : 'پخش تصادفی غیرفعال شد');
     }
 
@@ -1909,6 +2097,26 @@
       } else {
         remEl.textContent = formatTime(audio.duration);
       }
+      updateDesktopTimeLabels();
+    }
+
+    function updateDesktopTimeLabels() {
+      const elapsed = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
+      const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
+      document.getElementById('desktopCurrentTime').textContent = formatTime(elapsed);
+      document.getElementById('desktopDuration').textContent = formatTime(duration);
+      const progress = duration ? Math.round((elapsed / duration) * 1000) : 0;
+      const seek = document.getElementById('desktopSeek');
+      seek.value = String(progress);
+      seek.style.setProperty('--seek-progress', `${progress / 10}%`);
+    }
+
+    function seekDesktopPlayer(value) {
+      if (!Number.isFinite(audio.duration) || audio.duration <= 0) return;
+      const progress = Math.max(0, Math.min(1000, Number(value) || 0));
+      audio.currentTime = (progress / 1000) * audio.duration;
+      document.getElementById('desktopSeek').style.setProperty('--seek-progress', `${progress / 10}%`);
+      updateDesktopTimeLabels();
     }
 
     function setAmbientCover(url) {
@@ -2217,7 +2425,7 @@
         showToast('⚠️ این ترک هنوز سینک نشده یا قابل پخش آنلاین نیست.');
       }
 
-      const artUrl = await fetchCover(song, ['mpArt', 'fpArt'], true);
+      const artUrl = await fetchCover(song, ['mpArt', 'fpArt', 'desktopArt'], true);
       updateMediaSession(song, artUrl);
       renderSongs();
     }
@@ -2227,6 +2435,9 @@
       document.getElementById('mpArtist').textContent = song.performer;
       document.getElementById('fpTitle').textContent = song.title;
       document.getElementById('fpArtist').textContent = song.performer;
+      document.getElementById('desktopTitle').textContent = song.title;
+      document.getElementById('desktopArtist').textContent = song.performer;
+      document.getElementById('desktopPlayerStatus').textContent = 'در حال آماده‌سازی';
 
       const bg = getColor(song.id);
       const mpArt = document.getElementById('mpArt');
@@ -2235,10 +2446,40 @@
       fpArt.style.background = bg;
       mpArt.textContent = song.title[0] || '🎵';
       fpArt.textContent = song.title[0] || '🎵';
+      const desktopArt = document.getElementById('desktopArt');
+      desktopArt.style.background = bg;
+      desktopArt.textContent = song.title[0] || '♫';
 
       const isFav = favoriteIds.has(song.id);
       document.getElementById('mpFavBtn').innerHTML = isFav ? HEART_FILLED : HEART_OUTLINE;
       document.getElementById('fpFavBtn').innerHTML = isFav ? HEART_FILLED : HEART_OUTLINE;
+      const desktopFavBtn = document.getElementById('desktopFavBtn');
+      desktopFavBtn.innerHTML = isFav ? HEART_FILLED : HEART_OUTLINE;
+      desktopFavBtn.setAttribute('aria-label', isFav ? 'حذف از پلی‌لیست من' : 'افزودن به پلی‌لیست من');
+      desktopFavBtn.title = isFav ? 'حذف از پلی‌لیست من' : 'افزودن به پلی‌لیست من';
+      updateDesktopQueue();
+      updateDesktopTimeLabels();
+    }
+
+    function updateDesktopQueue() {
+      const currentIndex = currentSongs.findIndex(song => currentSong && song.uid === currentSong.uid);
+      const queuedSong = currentSongs.length > 1 && currentIndex >= 0 ? currentSongs[(currentIndex + 1) % currentSongs.length] : null;
+      const title = document.getElementById('desktopQueueTitle');
+      const artist = document.getElementById('desktopQueueArtist');
+      const art = document.getElementById('desktopQueueArt');
+      if (!queuedSong) {
+        title.textContent = currentSong ? 'صف پخش به پایان رسیده' : 'انتخاب آهنگ بعدی';
+        artist.textContent = currentSong ? 'برای ادامه آهنگ بعدی را پخش کن' : 'از فهرست آهنگ‌ها پخش کن';
+        art.textContent = '♫';
+        art.style.background = '';
+        art.innerHTML = '♫';
+        return;
+      }
+      title.textContent = queuedSong.title;
+      artist.textContent = queuedSong.performer;
+      art.style.background = getColor(queuedSong.id);
+      art.textContent = queuedSong.title[0] || '♫';
+      fetchCover(queuedSong, ['desktopQueueArt']);
     }
 
     function togglePlay() {
@@ -2363,6 +2604,8 @@
     audio.addEventListener('playing', () => {
       document.getElementById('mpPlayBtn').innerHTML = PAUSE_SVG;
       document.getElementById('fpPlayBtn').innerHTML = PAUSE_SVG;
+      document.getElementById('desktopPlayBtn').innerHTML = PAUSE_SVG;
+      document.getElementById('desktopPlayerStatus').textContent = 'در حال پخش';
       document.getElementById('fpArt').classList.add('playing-scale');
       document.getElementById('fpLiveWave').classList.add('animating');
       if (!rafId) animateWaveform();
@@ -2372,6 +2615,8 @@
     audio.addEventListener('pause', () => {
       document.getElementById('mpPlayBtn').innerHTML = PLAY_SVG;
       document.getElementById('fpPlayBtn').innerHTML = PLAY_SVG;
+      document.getElementById('desktopPlayBtn').innerHTML = PLAY_SVG;
+      document.getElementById('desktopPlayerStatus').textContent = currentSong ? 'متوقف‌شده' : 'آمادهٔ پخش';
       document.getElementById('fpArt').classList.remove('playing-scale');
       document.getElementById('fpLiveWave').classList.remove('animating');
       renderSongs();
@@ -2393,6 +2638,8 @@
       if (!isSeekingWave) updateScrubberVisual(pct);
       updateTimeLabels();
     });
+    audio.addEventListener('loadedmetadata', updateDesktopTimeLabels);
+    audio.addEventListener('durationchange', updateDesktopTimeLabels);
 
     function formatTime(sec) {
       const m = Math.floor(sec / 60);
