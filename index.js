@@ -5,15 +5,16 @@ const axios = require('axios');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const Database = require('better-sqlite3');
+const DB = require('./db.js');
 
-const BOT_TOKEN = process.env.BOT_TOKEN || '8973013935:AAE9N-n3I8jKWg9TWu_wmZICZDaeD6zzFbw';
-const MINI_APP_URL = (process.env.MINI_APP_URL || 'https://mini-app-music-bot-production.up.railway.app').replace(/\/$/, '');
+const BOT_TOKEN = process.env.BOT_TOKEN || '9037774797:AAH8B8X6yT7rCayHJbVPrPGx2Ft4WwgL35I';
+const STORAGE_BOT_TOKEN = process.env.STORAGE_BOT_TOKEN || '8973013935:AAE9N-n3I8jKWg9TWu_wmZICZDaeD6zzFbw';
+const MINI_APP_URL = (process.env.MINI_APP_URL || '').replace(/\/$/, '');
+const APP_VERSION = '2.1.0';
+const WEB_APP_URL = MINI_APP_URL ? (MINI_APP_URL.includes('?') ? `${MINI_APP_URL}&v=${APP_VERSION}` : `${MINI_APP_URL}?v=${APP_VERSION}`) : '';
 const PORT = parseInt(process.env.PORT || '8080', 10);
-const ADMIN_IDS = [849152312];
-const GROUP_URL = 'https://t.me/+k1KWTCq0FMswZjM0';
-
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'gapmusic.db');
+const ADMIN_IDS = (process.env.ADMIN_IDS || '849152312').split(',').map(s => parseInt(s.trim(), 10)).filter(Boolean);
+const GROUP_URL = process.env.GROUP_URL || '';
 
 const TELEGRAM_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 const TELEGRAM_FILE_API = `https://api.telegram.org/file/bot${BOT_TOKEN}`;
@@ -21,230 +22,8 @@ const TELEGRAM_FILE_API = `https://api.telegram.org/file/bot${BOT_TOKEN}`;
 let BOT_USERNAME = '';
 const COVER_CACHE = new Map();
 
-// ---------------------------------------------------------------------------
-// اتصال به دیتابیس SQLite (منطبق با ساختار gapmusic.db)
-// ---------------------------------------------------------------------------
-const db = new Database(DB_PATH);
-db.pragma('journal_mode = WAL');
-db.pragma('synchronous = NORMAL');
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS songs (
-    id INTEGER PRIMARY KEY,
-    uid TEXT UNIQUE,
-    from_chat_id TEXT,
-    message_id INTEGER,
-    file_id TEXT,
-    file_unique_id TEXT,
-    title TEXT,
-    performer TEXT,
-    search_text TEXT,
-    media_type TEXT DEFAULT 'audio',
-    plays INTEGER DEFAULT 0,
-    likes INTEGER DEFAULT 0,
-    available INTEGER DEFAULT 1
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_songs_plays ON songs (plays DESC);
-  CREATE INDEX IF NOT EXISTS idx_songs_likes ON songs (likes DESC);
-  CREATE INDEX IF NOT EXISTS idx_songs_id_desc ON songs (id DESC);
-
-  CREATE VIRTUAL TABLE IF NOT EXISTS songs_fts USING fts5(
-    id UNINDEXED,
-    title,
-    performer,
-    search_text
-  );
-
-  CREATE TRIGGER IF NOT EXISTS songs_ai AFTER INSERT ON songs BEGIN
-    INSERT INTO songs_fts(id, title, performer, search_text)
-    VALUES (new.id, new.title, new.performer, new.search_text);
-  END;
-
-  CREATE TRIGGER IF NOT EXISTS songs_ad AFTER DELETE ON songs BEGIN
-    DELETE FROM songs_fts WHERE id = old.id;
-  END;
-
-  CREATE TRIGGER IF NOT EXISTS songs_au AFTER UPDATE ON songs BEGIN
-    DELETE FROM songs_fts WHERE id = old.id;
-    INSERT INTO songs_fts(id, title, performer, search_text)
-    VALUES (new.id, new.title, new.performer, new.search_text);
-  END;
-
-  CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    name TEXT,
-    username TEXT,
-    joined_at INTEGER
-  );
-
-  CREATE TABLE IF NOT EXISTS favorites (
-    user_id TEXT,
-    song_id INTEGER,
-    created_at INTEGER,
-    PRIMARY KEY (user_id, song_id)
-  );
-
-  CREATE TABLE IF NOT EXISTS requests (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id TEXT,
-    user_name TEXT,
-    query TEXT,
-    expanded_query TEXT,
-    status TEXT DEFAULT 'pending',
-    fulfilled_song_id INTEGER,
-    created_at INTEGER,
-    fulfilled_at INTEGER
-  );
-
-  CREATE TABLE IF NOT EXISTS lyrics_cache (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    song_key TEXT UNIQUE,
-    synced_lyrics TEXT,
-    plain_lyrics TEXT,
-    cached_at INTEGER
-  );
-`);
-
 function isAdmin(userId) {
   return ADMIN_IDS.includes(Number(userId));
-}
-
-// دیکشنری هوشمند معادل‌سازی فارسی و انگلیسی برای جستجوی دوزبانه
-const BILINGUAL_ALIASES = [
-  ['tataloo', 'تتلو', 'امیر تتلو'],
-  ['yas', 'یاس'],
-  ['shayea', 'شایع'],
-  ['pishro', 'پیشرو', 'رضا پیشرو'],
-  ['hichkas', 'هیچکس'],
-  ['ho3ein', 'حصین', 'hosein'],
-  ['mehrad hidden', 'مهراد هیدن', 'هیدن', 'hidden'],
-  ['zedbazi', 'زدبازی'],
-  ['sohrab mj', 'سهراب ام جی', 'ام جی'],
-  ['alireza jj', 'علیرضا جی جی', 'جی جی'],
-  ['sijal', 'سیجل'],
-  ['behzad leito', 'بهزاد لیتو', 'لیتو', 'leito'],
-  ['khalse', 'سپهر خلسه', 'خلسه'],
-  ['putak', 'پوتک', 'پوریا پوتک'],
-  ['chvrsi', 'چرسی', 'charsi'],
-  ['hiphopologist', 'هیپهاپولوژیست'],
-  ['vinak', 'ویناک'],
-  ['021kid', '۰۲۱کید', '021'],
-  ['dorcci', 'دورچی', 'dorci'],
-  ['koorosh', 'کوروش'],
-  ['artin', 'ارتین'],
-  ['erfan', 'عرفان', 'پایدار'],
-  ['isogand', 'سوگند', 'sogand'],
-  ['shadmehr', 'شادمهر', 'شادمهر عقیلی'],
-  ['ebi', 'ابی'],
-  ['dariush', 'داریوش'],
-  ['siavash ghomayshi', 'سیاوش قمیشی', 'قمیشی'],
-  ['moein', 'معین'],
-  ['haydeh', 'هایده', 'hayedeh'],
-  ['mahasti', 'مهستی'],
-  ['googoosh', 'گوگوش'],
-  ['chavoshi', 'محسن چاوشی', 'چاوشی'],
-  ['yegane', 'محسن یگانه', 'یگانه'],
-  ['sirvan', 'سیروان', 'سیروان خسروی'],
-  ['xaniar', 'زانیار', 'زانیار خسروی'],
-  ['macan', 'ماکان', 'ماکان بند'],
-  ['ashvan', 'اشوان'],
-  ['aron afshar', 'آرون افشار'],
-  ['garsha rezaei', 'گرشا رضایی'],
-  ['reza bahram', 'رضا بهرام'],
-  ['ali yasini', 'علی یاسینی'],
-  ['haamim', 'حامیم', 'hamim'],
-  ['the weeknd', 'weeknd', 'ویکند', 'د ویکند'],
-  ['drake', 'دریک'],
-  ['eminem', 'امینم'],
-  ['travis scott', 'تراویس اسکات', 'تراویس'],
-  ['kendrick lamar', 'کندریک لامار', 'کندریک'],
-  ['kanye west', 'کانیه وست', 'کانیه'],
-  ['post malone', 'پست مالون'],
-  ['billie eilish', 'بیلی آیلیش'],
-  ['lana del rey', 'لانا دل ری'],
-  ['taylor swift', 'تیلور سوئیفت'],
-  ['adele', 'ادل'],
-  ['rihanna', 'ریحانا'],
-  ['beyonce', 'بیانسه'],
-  ['justin bieber', 'جاستین بیبر'],
-  ['selena gomez', 'سلنا گومز'],
-  ['dua lipa', 'دوا لیپا'],
-  ['shakira', 'شکیرا'],
-  ['ed sheeran', 'اد شیرن'],
-  ['coldplay', 'کلدپلی'],
-  ['imagine dragons', 'ایمجین دراگونز'],
-  ['xxxtenacion', 'xxxtentacion', 'تنتاسیون', 'ایکس'],
-  ['juice wrld', 'جویس ورلد'],
-  ['2pac', 'tupac', 'توپاک'],
-  ['snoop dogg', 'اسنوپ داگ'],
-  ['50 cent', 'فیفتی سنت'],
-  ['central cee', 'سنترال سی'],
-  ['metro boomin', 'مترو بومین'],
-  ['future', 'فیوچر'],
-  ['21 savage', '۲۱ سویج', 'تونی وان سویج'],
-  ['playboi carti', 'پلی بوی کارتی'],
-  ['lil wayne', 'لیل وین'],
-  ['tame impala', 'تیم ایمپالا'],
-  ['arctic monkeys', 'آرکتیک مانکیز'],
-  ['daft punk', 'دفت پانک'],
-  ['alan walker', 'آلن واکر'],
-  ['marshmello', 'مارشملو'],
-  ['remix', 'ریمیکس'],
-  ['slowed', 'اسلود'],
-  ['reverb', 'ریورب']
-];
-
-function normalizeText(text) {
-  if (!text) return '';
-  let t = String(text).toLowerCase();
-  const map = {
-    'ي': 'ی', 'ك': 'ک', 'آ': 'ا', 'أ': 'ا', 'إ': 'ا',
-    'ۀ': 'ه', 'ة': 'ه', 'ؤ': 'و', 'ئ': 'ی',
-    '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
-    '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
-    '\u200c': ' ', '_': ' ', '-': ' ', '.': ' ', '/': ' ', '\\': ' '
-  };
-  for (const [k, v] of Object.entries(map)) {
-    t = t.split(k).join(v);
-  }
-  return t.replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
-}
-
-function persianToLatinPhonetic(text) {
-  const norm = normalizeText(text);
-  if (!/[آ-ی]/.test(norm)) return norm;
-
-  const charMap = {
-    'ا': 'a', 'ب': 'b', 'پ': 'p', 'ت': 't', 'ط': 't', 'ث': 's', 'س': 's', 'ص': 's',
-    'ج': 'j', 'چ': 'ch', 'ح': 'h', 'ه': 'h', 'خ': 'kh', 'د': 'd', 'ذ': 'z', 'ز': 'z',
-    'ض': 'z', 'ظ': 'z', 'ر': 'r', 'ژ': 'zh', 'ش': 'sh', 'ع': 'a', 'غ': 'gh', 'ق': 'gh',
-    'ف': 'f', 'ک': 'k', 'گ': 'g', 'ل': 'l', 'م': 'm', 'ن': 'n', 'و': 'o', 'ی': 'i'
-  };
-
-  let out = '';
-  for (const ch of norm) {
-    out += charMap[ch] !== undefined ? charMap[ch] : ch;
-  }
-  return out.replace(/\s+/g, ' ').trim();
-}
-
-function expandBilingualTerms(text) {
-  const norm = normalizeText(text);
-  if (!norm) return '';
-
-  const extras = new Set([norm]);
-  const phonetic = persianToLatinPhonetic(norm);
-  if (phonetic && phonetic !== norm) extras.add(phonetic);
-
-  for (const group of BILINGUAL_ALIASES) {
-    const normGroup = group.map(g => normalizeText(g));
-    if (normGroup.some(alias => alias && (norm.includes(alias) || (alias.includes(norm) && norm.length >= 3)))) {
-      normGroup.forEach(a => extras.add(a));
-    }
-  }
-
-  return Array.from(extras).join(' ');
 }
 
 function cleanDisplayText(text) {
@@ -257,141 +36,6 @@ function cleanDisplayText(text) {
     .replace(/_/g, ' ')
     .replace(/^[\s\-_|/؛.]+|[\s\-_|/؛.]+$/g, '');
   return t || 'نامشخص';
-}
-
-// ---------------------------------------------------------------------------
-// توابع دسترسی به SQLite
-// ---------------------------------------------------------------------------
-const ACTIVE_WHERE = "available = 1 AND (COALESCE(TRIM(file_id), '') != '' OR (from_chat_id IS NOT NULL AND message_id IS NOT NULL))";
-
-function getActiveSongsCount() {
-  return db.prepare(`SELECT COUNT(*) AS c FROM songs WHERE ${ACTIVE_WHERE}`).get().c;
-}
-
-function getUsersCount() {
-  return db.prepare('SELECT COUNT(*) AS c FROM users').get().c;
-}
-
-function getRequestsCount(onlyPending = false) {
-  if (onlyPending) {
-    return db.prepare("SELECT COUNT(*) AS c FROM requests WHERE status = 'pending'").get().c;
-  }
-  return db.prepare('SELECT COUNT(*) AS c FROM requests').get().c;
-}
-
-function getSongById(songId) {
-  return db.prepare('SELECT * FROM songs WHERE id = ?').get(Number(songId));
-}
-
-function getActiveSongByUidOrId(uidOrId) {
-  return db.prepare(`SELECT * FROM songs WHERE ${ACTIVE_WHERE} AND (uid = ? OR id = ?) LIMIT 1`)
-    .get(String(uidOrId), Number(uidOrId) || -1);
-}
-
-function getSongsPage(filter = 'all', offset = 0, limit = 60) {
-  const orderBy = filter === 'popular' ? 'plays DESC, likes DESC, id DESC' : 'id DESC';
-  const total = getActiveSongsCount();
-  const items = db.prepare(`
-    SELECT id, uid, title, performer, likes, plays
-    FROM songs
-    WHERE ${ACTIVE_WHERE}
-    ORDER BY ${orderBy}
-    LIMIT ? OFFSET ?
-  `).all(limit, offset);
-  return { total, items };
-}
-
-function getSongsByIds(ids) {
-  if (!ids || !ids.length) return [];
-  const placeholders = ids.map(() => '?').join(',');
-  const rows = db.prepare(`SELECT * FROM songs WHERE ${ACTIVE_WHERE} AND id IN (${placeholders})`).all(...ids);
-  const map = new Map(rows.map(r => [r.id, r]));
-  return ids.map(id => map.get(id)).filter(Boolean);
-}
-
-function getRandomActiveSong() {
-  return db.prepare(`SELECT * FROM songs WHERE ${ACTIVE_WHERE} ORDER BY RANDOM() LIMIT 1`).get();
-}
-
-function incrementSongPlays(songId) {
-  db.prepare('UPDATE songs SET plays = COALESCE(plays, 0) + 1 WHERE id = ?').run(songId);
-}
-
-function deleteSongById(songId) {
-  const song = getSongById(songId);
-  if (!song) return null;
-  const tx = db.transaction(() => {
-    db.prepare('DELETE FROM songs WHERE id = ?').run(Number(songId));
-    db.prepare('DELETE FROM favorites WHERE song_id = ?').run(Number(songId));
-  });
-  tx();
-  return song;
-}
-
-function registerUser(user) {
-  if (!user || !user.id) return;
-  const uid = String(user.id);
-  const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.name || '';
-  const username = user.username || '';
-  const now = Math.floor(Date.now() / 1000);
-
-  db.prepare(`
-    INSERT INTO users (id, name, username, joined_at)
-    VALUES (?, ?, ?, ?)
-    ON CONFLICT(id) DO UPDATE SET
-      name = CASE WHEN excluded.name != '' THEN excluded.name ELSE users.name END,
-      username = CASE WHEN excluded.username != '' THEN excluded.username ELSE users.username END
-  `).run(uid, fullName, username, now);
-}
-
-function getUserById(userId) {
-  if (!userId) return null;
-  return db.prepare('SELECT * FROM users WHERE id = ?').get(String(userId));
-}
-
-function getUserFavorites(userId) {
-  if (!userId) return { favorite_ids: [], items: [] };
-  const uid = String(userId);
-  const items = db.prepare(`
-    SELECT s.id, s.uid, s.title, s.performer, s.likes, s.plays
-    FROM favorites f
-    JOIN songs s ON s.id = f.song_id
-    WHERE f.user_id = ?
-      AND s.available = 1
-      AND (COALESCE(TRIM(s.file_id), '') != '' OR (s.from_chat_id IS NOT NULL AND s.message_id IS NOT NULL))
-    ORDER BY f.created_at DESC
-  `).all(uid);
-  return { favorite_ids: items.map(s => s.id), items };
-}
-
-function isSongFavorited(userId, songId) {
-  return Boolean(db.prepare('SELECT 1 FROM favorites WHERE user_id = ? AND song_id = ?').get(String(userId), Number(songId)));
-}
-
-function toggleFavorite(userId, songId) {
-  const uid = String(userId);
-  const sid = Number(songId);
-  const now = Math.floor(Date.now() / 1000);
-
-  db.prepare('INSERT OR IGNORE INTO users (id, name, username, joined_at) VALUES (?, ?, ?, ?)').run(uid, '', '', now);
-
-  const tx = db.transaction(() => {
-    const exists = db.prepare('SELECT 1 FROM favorites WHERE user_id = ? AND song_id = ?').get(uid, sid);
-    if (exists) {
-      db.prepare('DELETE FROM favorites WHERE user_id = ? AND song_id = ?').run(uid, sid);
-      db.prepare('UPDATE songs SET likes = MAX(0, COALESCE(likes, 0) - 1) WHERE id = ?').run(sid);
-      return false;
-    } else {
-      db.prepare('INSERT INTO favorites (user_id, song_id, created_at) VALUES (?, ?, ?)').run(uid, sid, now);
-      db.prepare('UPDATE songs SET likes = COALESCE(likes, 0) + 1 WHERE id = ?').run(sid);
-      return true;
-    }
-  });
-
-  const liked = tx();
-  const song = db.prepare('SELECT likes FROM songs WHERE id = ?').get(sid);
-  const favIds = db.prepare('SELECT song_id FROM favorites WHERE user_id = ?').all(uid).map(r => r.song_id);
-  return { liked, likes: song ? song.likes : 0, favorites: favIds };
 }
 
 function resolveUserId(initData, fallbackId) {
@@ -422,144 +66,114 @@ function resolveUserId(initData, fallbackId) {
   return null;
 }
 
-// موتور جستجوی هوشمند دوزبانه با سرعت بالای FTS5 در SQLite
-function smartSearchSongs(rawQuery, { onlyWithFileId = false, limit = 200 } = {}) {
-  const normQ = normalizeText(rawQuery);
-  if (!normQ) return [];
+// حل هوشمند و تضمینی دسترسی به فایل صوتی
+async function resolvePlayableFile(song, fallbackChatId = null) {
+  let lastError = 'اطلاعات فایل ناقص است';
 
-  const expandedQ = expandBilingualTerms(normQ);
-  const rawTokens = normQ.split(' ').filter(Boolean);
-  const qTokens = Array.from(new Set(expandedQ.split(' ').filter(t => t.length >= 2)));
-  const searchTokens = qTokens.length ? qTokens : rawTokens;
-
-  const extraFileWhere = onlyWithFileId ? " AND COALESCE(TRIM(s.file_id), '') != ''" : '';
-  let candidates = [];
-
-  try {
-    const ftsQuery = searchTokens
-      .slice(0, 12)
-      .map(t => `"${t.replace(/"/g, '')}"*`)
-      .join(' OR ');
-
-    if (ftsQuery) {
-      candidates = db.prepare(`
-        SELECT s.*
-        FROM songs_fts f
-        JOIN songs s ON s.id = f.id
-        WHERE songs_fts MATCH ?
-          AND s.available = 1
-          AND (COALESCE(TRIM(s.file_id), '') != '' OR (s.from_chat_id IS NOT NULL AND s.message_id IS NOT NULL))
-          ${extraFileWhere}
-        LIMIT 300
-      `).all(ftsQuery);
-    }
-  } catch (e) {
-    candidates = [];
-  }
-
-  if (!candidates.length && searchTokens.length) {
-    const likeTokens = searchTokens.slice(0, 8);
-    const whereOr = likeTokens.map(() => 'search_text LIKE ?').join(' OR ');
-    const params = likeTokens.map(t => `%${t}%`);
-    candidates = db.prepare(`
-      SELECT * FROM songs
-      WHERE ${ACTIVE_WHERE} ${onlyWithFileId ? "AND COALESCE(TRIM(file_id), '') != ''" : ''}
-        AND (${whereOr})
-      LIMIT 300
-    `).all(...params);
-  }
-
-  const scored = [];
-  for (const s of candidates) {
-    const sText = (s.search_text || '').toLowerCase();
-    const titlePerformer = normalizeText(`${s.title} ${s.performer}`);
-    let score = 0;
-
-    if (rawTokens.every(t => titlePerformer.includes(t))) {
-      score += 150;
-    } else if (rawTokens.every(t => sText.includes(t))) {
-      score += 100;
-    }
-
-    const matchedCount = searchTokens.filter(t => sText.includes(t)).length;
-    score += matchedCount * 10;
-
-    if (score > 0) {
-      scored.push({ song: s, score });
+  // ۱. بررسی file_id ثبت‌شده با ربات فعال (هویت جدید)
+  if (song.file_id && String(song.file_id).trim()) {
+    try {
+      const check = await axios.get(`${TELEGRAM_API}/getFile`, {
+        params: { file_id: song.file_id },
+        timeout: 10000
+      });
+      if (check.data?.ok && check.data?.result?.file_path) {
+        return { fileId: song.file_id, filePath: check.data.result.file_path, fileApi: TELEGRAM_FILE_API };
+      }
+    } catch (e) {
+      lastError = e.response?.data?.description || e.message;
     }
   }
 
-  scored.sort((a, b) => (b.score - a.score) || ((b.song.plays || 0) - (a.song.plays || 0)) || (b.song.id - a.song.id));
-  return scored.slice(0, limit).map(x => x.song);
+  // ۲. دسترسی امن و نامحسوس به انبار فایل‌ها (STORAGE_BOT_TOKEN) فقط برای خواندن مسیر فایل
+  if (STORAGE_BOT_TOKEN && STORAGE_BOT_TOKEN !== BOT_TOKEN && song.file_id && String(song.file_id).trim()) {
+    try {
+      const checkStorage = await axios.get(`https://api.telegram.org/bot${STORAGE_BOT_TOKEN}/getFile`, {
+        params: { file_id: song.file_id },
+        timeout: 10000
+      });
+      if (checkStorage.data?.ok && checkStorage.data?.result?.file_path) {
+        return {
+          filePath: checkStorage.data.result.file_path,
+          fileApi: `https://api.telegram.org/file/bot${STORAGE_BOT_TOKEN}`
+        };
+      }
+    } catch (eStorage) {}
+  }
+
+  // ۲. تلاش برای استخراج file_id جدید با فوروارد پیام از چت مبدا
+  const forwardDests = [fallbackChatId, ...ADMIN_IDS].filter(Boolean);
+  if (song.from_chat_id && song.message_id && forwardDests.length > 0) {
+    let chatId = String(song.from_chat_id).trim();
+    const candidates = [chatId];
+    if (!chatId.startsWith('-100') && chatId.startsWith('-')) {
+      candidates.push(`-100${chatId.slice(1)}`);
+    } else if (!chatId.startsWith('-') && chatId.length >= 9) {
+      candidates.push(`-100${chatId}`);
+    }
+
+    for (const destChat of forwardDests) {
+      for (const targetChat of candidates) {
+        try {
+          const fwd = await axios.post(`${TELEGRAM_API}/forwardMessage`, {
+            chat_id: destChat,
+            from_chat_id: targetChat,
+            message_id: song.message_id,
+            disable_notification: true
+          }, { timeout: 12000 });
+
+          const msg = fwd.data?.result;
+          const audioObj = msg?.audio || msg?.document || msg?.voice;
+
+          if (audioObj?.file_id) {
+            DB.updateSongFile(song.id, { file_id: audioObj.file_id, from_chat_id: targetChat });
+
+            // اگر به ادمین فوروارد شده بود و نیازی به ماندن پیام نبود، پاک شود
+            if (ADMIN_IDS.includes(Number(destChat)) && destChat !== fallbackChatId && msg?.message_id) {
+              axios.post(`${TELEGRAM_API}/deleteMessage`, { chat_id: destChat, message_id: msg.message_id }).catch(() => {});
+            }
+
+            const check2 = await axios.get(`${TELEGRAM_API}/getFile`, {
+              params: { file_id: audioObj.file_id },
+              timeout: 10000
+            });
+            if (check2.data?.ok && check2.data?.result?.file_path) {
+              return {
+                fileId: audioObj.file_id,
+                filePath: check2.data.result.file_path,
+                alreadyDelivered: (destChat === fallbackChatId)
+              };
+            }
+            return {
+              fileId: audioObj.file_id,
+              alreadyDelivered: (destChat === fallbackChatId)
+            };
+          }
+        } catch (e) {
+          lastError = `(${targetChat}): ${e.response?.data?.description || e.message}`;
+        }
+      }
+    }
+  }
+
+  return { error: lastError };
 }
 
-// ثبت درخواست موزیک در SQLite و ارسال فوری به پی‌وی ادمین
-async function submitSongRequest(userId, userName, queryText) {
-  const cleanQ = String(queryText || '').trim();
-  if (!cleanQ) return null;
-
-  const uid = String(userId);
-  const normQ = normalizeText(cleanQ);
-  const pendingByUser = db.prepare("SELECT * FROM requests WHERE user_id = ? AND status = 'pending'").all(uid);
-  const existing = pendingByUser.find(r => normalizeText(r.query) === normQ);
-  if (existing) return existing;
-
-  const savedUser = getUserById(uid);
-  const finalName = userName || savedUser?.name || 'کاربر';
-  const expanded = expandBilingualTerms(cleanQ);
-  const now = Math.floor(Date.now() / 1000);
-
-  const info = db.prepare(`
-    INSERT INTO requests (user_id, user_name, query, expanded_query, status, created_at)
-    VALUES (?, ?, ?, ?, 'pending', ?)
-  `).run(uid, finalName, cleanQ, expanded, now);
-
-  const reqObj = {
-    id: info.lastInsertRowid,
-    user_id: uid,
-    user_name: finalName,
-    query: cleanQ,
-    expanded_query: expanded,
-    status: 'pending',
-    created_at: now
-  };
-
-  const adminMsg =
-    `📩 **درخواست موزیک جدید از مینی‌اپ/ربات**\n\n` +
-    `🎵 آهنگ درخواستی: **${cleanQ}**\n` +
-    `👤 درخواست‌کننده: ${reqObj.user_name} (\`${userId}\`)\n` +
-    `🆔 کد درخواست: #${reqObj.id}\n\n` +
-    `💡 به محض اینکه فایل این آهنگ را در پی‌وی ربات آپلود کنید، به صورت خودکار به کاربر اطلاع داده می‌شود!`;
-
-  for (const adm of ADMIN_IDS) {
-    axios.post(`${TELEGRAM_API}/sendMessage`, {
-      chat_id: adm,
-      text: adminMsg,
-      parse_mode: 'Markdown'
-    }).catch(() => {});
-  }
-
-  return reqObj;
-}
-
-// بررسی و اطلاع‌رسانی خودکار به کاربرانی که این آهنگ را درخواست داده بودند
+// اطلاع‌رسانی خودکار به کاربرانی که درخواست داده بودند
 async function notifyFulfilledRequests(song) {
-  const pending = db.prepare("SELECT * FROM requests WHERE status = 'pending'").all();
+  const pending = DB.getPendingRequests();
   if (!pending.length) return;
 
-  const songSearch = song.search_text || expandBilingualTerms(`${song.title} ${song.performer}`);
-  const updateReq = db.prepare(`
-    UPDATE requests SET status = 'fulfilled', fulfilled_song_id = ?, fulfilled_at = ? WHERE id = ?
-  `);
+  const songSearch = song.search_text || DB.expandBilingualTerms(`${song.title} ${song.performer}`);
 
   for (const req of pending) {
-    const reqExpanded = req.expanded_query || expandBilingualTerms(req.query);
+    const reqExpanded = req.expanded_query || DB.expandBilingualTerms(req.query);
     const tokens = reqExpanded.split(' ').filter(t => t.length >= 2);
     if (!tokens.length) continue;
 
     const isMatch = tokens.some(t => songSearch.includes(t));
     if (isMatch && req.user_id) {
-      updateReq.run(song.id, Math.floor(Date.now() / 1000), req.id);
+      DB.fulfillRequest(req.id, song.id);
 
       const notifyText =
         `🎉 **خبر خوش! موزیک درخواستی شما آماده شد**\n\n` +
@@ -571,8 +185,8 @@ async function notifyFulfilledRequests(song) {
       const buttons = [
         [{ text: '📥 دریافت فایل موزیک', callback_data: `dl_${song.id}` }]
       ];
-      if (MINI_APP_URL.startsWith('https://')) {
-        buttons.push([{ text: '🎧 پخش آنلاین در مینی‌اپ', web_app: { url: MINI_APP_URL } }]);
+      if (WEB_APP_URL) {
+        buttons.push([{ text: '🎧 پخش آنلاین در مینی‌اپ', web_app: { url: WEB_APP_URL } }]);
       }
 
       axios.post(`${TELEGRAM_API}/sendMessage`, {
@@ -585,73 +199,6 @@ async function notifyFulfilledRequests(song) {
   }
 }
 
-async function resolvePlayableFile(song) {
-  let lastError = 'اطلاعات فایل ناقص است';
-
-  if (song.file_id && String(song.file_id).trim()) {
-    try {
-      const check = await axios.get(`${TELEGRAM_API}/getFile`, {
-        params: { file_id: song.file_id },
-        timeout: 10000
-      });
-      if (check.data?.ok && check.data?.result?.file_path) {
-        return { fileId: song.file_id, filePath: check.data.result.file_path };
-      }
-    } catch (e) {
-      lastError = e.response?.data?.description || e.message;
-      if (lastError.includes('wrong file_id')) {
-        song.file_id = '';
-        db.prepare("UPDATE songs SET file_id = '' WHERE id = ?").run(song.id);
-      }
-    }
-  }
-
-  if (song.from_chat_id && song.message_id && ADMIN_IDS.length > 0) {
-    let chatId = String(song.from_chat_id).trim();
-    const candidates = [chatId];
-    if (!chatId.startsWith('-100') && chatId.startsWith('-')) {
-      candidates.push(`-100${chatId.slice(1)}`);
-    } else if (!chatId.startsWith('-')) {
-      candidates.push(`-100${chatId}`);
-    }
-
-    for (const targetChat of candidates) {
-      try {
-        const fwd = await axios.post(`${TELEGRAM_API}/forwardMessage`, {
-          chat_id: ADMIN_IDS[0],
-          from_chat_id: targetChat,
-          message_id: song.message_id,
-          disable_notification: true
-        }, { timeout: 12000 });
-
-        const msg = fwd.data?.result;
-        const audioObj = msg?.audio || msg?.document || msg?.voice;
-        if (msg?.message_id) {
-          axios.post(`${TELEGRAM_API}/deleteMessage`, { chat_id: ADMIN_IDS[0], message_id: msg.message_id }).catch(() => {});
-        }
-        if (audioObj?.file_id) {
-          song.file_id = audioObj.file_id;
-          song.from_chat_id = targetChat;
-          db.prepare('UPDATE songs SET file_id = ?, from_chat_id = ? WHERE id = ?')
-            .run(song.file_id, song.from_chat_id, song.id);
-
-          const check2 = await axios.get(`${TELEGRAM_API}/getFile`, {
-            params: { file_id: song.file_id },
-            timeout: 10000
-          });
-          if (check2.data?.ok && check2.data?.result?.file_path) {
-            return { fileId: song.file_id, filePath: check2.data.result.file_path };
-          }
-        }
-      } catch (e) {
-        lastError = `(${targetChat}): ${e.response?.data?.description || e.message}`;
-      }
-    }
-  }
-
-  return { error: lastError };
-}
-
 async function sendAutoDeleteReply(ctx, text, delayMs = 5000) {
   try {
     const sent = await ctx.reply(text);
@@ -661,16 +208,15 @@ async function sendAutoDeleteReply(ctx, text, delayMs = 5000) {
   } catch (e) {}
 }
 
-console.log(`✅ دیتابیس SQLite متصل شد (${DB_PATH}) | موزیک‌های فعال: ${getActiveSongsCount()} | کاربران: ${getUsersCount()}`);
-
 // ---------------------------------------------------------------------------
-// سرور وب Express و API های مینی‌اپ
+// Express Server & APIs
 // ---------------------------------------------------------------------------
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'templates')));
 
 app.get('/', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   const htmlPath = path.join(__dirname, 'templates', 'index.html');
   if (fs.existsSync(htmlPath)) res.sendFile(htmlPath);
   else res.send('<h1>GapMusic Mini App Active</h1>');
@@ -678,12 +224,13 @@ app.get('/', (req, res) => {
 
 app.get('/api/config', (req, res) => {
   const userId = resolveUserId(req.query.init_data, req.query.user_id);
-  const savedUser = getUserById(userId);
+  const stats = DB.getStats();
+  const savedUser = userId ? DB.getUser(userId) : null;
   res.json({
     bot_username: BOT_USERNAME,
-    total_songs: getActiveSongsCount(),
-    total_users: getUsersCount(),
-    total_requests: getRequestsCount(),
+    total_songs: stats.total_songs,
+    total_users: stats.total_users,
+    total_requests: stats.total_requests,
     is_admin: isAdmin(userId),
     user_name: savedUser?.name || ''
   });
@@ -699,8 +246,9 @@ app.get('/api/avatar/:userId', async (req, res) => {
       timeout: 8000
     });
     const photos = photosResp.data?.result?.photos;
-    if (!photos || !photos.length || !photos[0].length) return res.status(404).end();
-
+    if (!photos || !photos.length || !photos[0].length) {
+      return res.status(404).end();
+    }
     const fileId = photos[0][0].file_id;
     const fileResp = await axios.get(`${TELEGRAM_API}/getFile`, {
       params: { file_id: fileId },
@@ -727,22 +275,77 @@ app.get('/api/songs', (req, res) => {
   const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
   const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 60));
 
-  if (rawQ) {
-    const found = smartSearchSongs(rawQ, { limit: 300 });
-    const total = found.length;
-    const items = found.slice(offset, offset + limit).map(s => ({
-      uid: s.uid,
-      id: s.id,
-      title: s.title,
-      performer: s.performer,
-      likes: s.likes || 0,
-      plays: s.plays || 0
-    }));
-    return res.json({ total, offset, limit, has_more: offset + items.length < total, items });
+  const result = DB.getSongs({ query: rawQ, filter, offset, limit });
+  const items = result.items.map(s => ({
+    uid: s.uid,
+    id: s.id,
+    title: s.title,
+    performer: s.performer,
+    likes: s.likes || 0,
+    plays: s.plays || 0
+  }));
+
+  res.json({
+    total: result.total,
+    offset: result.offset,
+    limit: result.limit,
+    has_more: result.has_more,
+    items
+  });
+});
+
+app.get('/api/lyrics', async (req, res) => {
+  const title = String(req.query.title || '').trim();
+  const artist = String(req.query.artist || '').trim();
+  const cleanTitle = cleanDisplayText(title);
+  const cleanArtist = cleanDisplayText(artist);
+
+  if (!cleanTitle && !cleanArtist) {
+    return res.status(400).json({ error: 'Title or artist required' });
   }
 
-  const { total, items } = getSongsPage(filter, offset, limit);
-  res.json({ total, offset, limit, has_more: offset + items.length < total, items });
+  const songKey = `${cleanArtist}_${cleanTitle}`.toLowerCase();
+  const cached = DB.getCachedLyrics(songKey);
+  if (cached && (cached.syncedLyrics || cached.plainLyrics)) {
+    return res.json(cached);
+  }
+
+  try {
+    const lrclibResp = await axios.get('https://lrclib.net/api/get', {
+      params: { track_name: cleanTitle, artist_name: cleanArtist },
+      timeout: 5000,
+      headers: { 'User-Agent': 'GapMusic MiniApp (https://t.me/)' }
+    });
+
+    const data = lrclibResp.data;
+    const syncedLyrics = data?.syncedLyrics || null;
+    const plainLyrics = data?.plainLyrics || null;
+
+    if (syncedLyrics || plainLyrics) {
+      DB.saveCachedLyrics(songKey, syncedLyrics, plainLyrics);
+      return res.json({ syncedLyrics, plainLyrics });
+    }
+  } catch (err) {
+    try {
+      const searchResp = await axios.get('https://lrclib.net/api/search', {
+        params: { q: `${cleanArtist} ${cleanTitle}` },
+        timeout: 5000,
+        headers: { 'User-Agent': 'GapMusic MiniApp (https://t.me/)' }
+      });
+      const results = searchResp.data;
+      if (Array.isArray(results) && results.length > 0) {
+        const first = results[0];
+        const syncedLyrics = first.syncedLyrics || null;
+        const plainLyrics = first.plainLyrics || null;
+        if (syncedLyrics || plainLyrics) {
+          DB.saveCachedLyrics(songKey, syncedLyrics, plainLyrics);
+          return res.json({ syncedLyrics, plainLyrics });
+        }
+      }
+    } catch (e2) {}
+  }
+
+  res.json({ syncedLyrics: null, plainLyrics: null });
 });
 
 app.post('/api/request', async (req, res) => {
@@ -750,11 +353,31 @@ app.post('/api/request', async (req, res) => {
   const userId = resolveUserId(req.body?.init_data, req.body?.user_id);
   const userName = String(req.body?.user_name || '').trim();
 
-  if (!queryText) return res.status(400).json({ detail: 'لطفاً نام آهنگ را وارد کنید.' });
-  if (!userId) return res.status(400).json({ detail: 'برای ثبت درخواست، مینی‌اپ را از داخل تلگرام باز کنید.' });
+  if (!queryText) {
+    return res.status(400).json({ detail: 'لطفاً نام آهنگ را وارد کنید.' });
+  }
+  if (!userId) {
+    return res.status(400).json({ detail: 'برای ثبت درخواست، مینی‌اپ را از داخل تلگرام باز کنید.' });
+  }
 
-  registerUser({ id: userId, first_name: userName });
-  const created = await submitSongRequest(userId, userName, queryText);
+  DB.registerUser({ id: userId, first_name: userName });
+  const created = DB.addSongRequest(userId, userName, queryText);
+
+  const adminMsg =
+    `📩 **درخواست موزیک جدید از مینی‌اپ/ربات**\n\n` +
+    `🎵 آهنگ درخواستی: **${queryText}**\n` +
+    `👤 درخواست‌کننده: ${userName} (\`${userId}\`)\n` +
+    `🆔 کد درخواست: #${created?.id || '?'}\n\n` +
+    `💡 به محض اینکه فایل این آهنگ را در پی‌وی ربات آپلود کنید، به صورت خودکار به کاربر اطلاع داده می‌شود!`;
+
+  for (const adm of ADMIN_IDS) {
+    axios.post(`${TELEGRAM_API}/sendMessage`, {
+      chat_id: adm,
+      text: adminMsg,
+      parse_mode: 'Markdown'
+    }).catch(() => {});
+  }
+
   res.json({ status: 'ok', request: created });
 });
 
@@ -765,13 +388,15 @@ app.delete('/api/admin/song/:id', (req, res) => {
   }
 
   const songId = parseInt(req.params.id, 10);
-  const removed = deleteSongById(songId);
-  if (!removed) return res.status(404).json({ detail: 'موزیک یافت نشد یا قبلاً حذف شده است.' });
+  const removed = DB.deleteSong(songId);
+  if (!removed) {
+    return res.status(404).json({ detail: 'موزیک یافت نشد یا قبلاً حذف شده است.' });
+  }
 
   res.json({
     status: 'ok',
     deleted: removed,
-    remaining: getActiveSongsCount()
+    remaining: DB.getStats().total_songs
   });
 });
 
@@ -803,7 +428,9 @@ app.get('/api/cover', async (req, res) => {
 app.get('/api/favorites', (req, res) => {
   const userId = resolveUserId(req.query.init_data, req.query.user_id);
   if (!userId) return res.json({ favorite_ids: [], items: [] });
-  res.json(getUserFavorites(userId));
+
+  const favResult = DB.getUserFavorites(userId);
+  res.json(favResult);
 });
 
 app.post('/api/favorite/:id', (req, res) => {
@@ -811,12 +438,12 @@ app.post('/api/favorite/:id', (req, res) => {
   const userId = resolveUserId(req.body.init_data, req.body.user_id);
   if (!userId) return res.status(400).json({ error: 'User ID required' });
 
-  const result = toggleFavorite(userId, songId);
+  const result = DB.toggleFavorite(userId, songId);
   res.json({ status: 'ok', ...result });
 });
 
 app.get('/api/random', (req, res) => {
-  const s = getRandomActiveSong();
+  const s = DB.getRandomSong();
   if (!s) return res.status(404).json({ detail: 'آهنگی یافت نشد' });
   res.json({
     uid: s.uid,
@@ -827,19 +454,20 @@ app.get('/api/random', (req, res) => {
   });
 });
 
+// استریم صوتی و دانلود مستقیم
 app.get('/api/stream/:uid', async (req, res) => {
-  const song = getActiveSongByUidOrId(req.params.uid);
+  const song = DB.getSongByUid(req.params.uid);
   if (!song) return res.status(404).json({ detail: 'موزیک یافت نشد' });
 
   const resolved = await resolvePlayableFile(song);
-  if (!resolved || resolved.error) {
+  if (!resolved || resolved.error || !resolved.filePath) {
     return res.status(404).json({
       detail: `خطای تلگرام: ${resolved?.error || 'فایل قابل استریم نیست'}`
     });
   }
 
   try {
-    const fileUrl = `${TELEGRAM_FILE_API}/${resolved.filePath}`;
+    const fileUrl = `${resolved.fileApi || TELEGRAM_FILE_API}/${resolved.filePath}`;
     const headers = {};
     if (req.headers.range) headers.Range = req.headers.range;
 
@@ -850,14 +478,19 @@ app.get('/api/stream/:uid', async (req, res) => {
       validateStatus: status => status >= 200 && status < 300
     });
 
-    if (!req.headers.range || req.headers.range.startsWith('bytes=0-')) {
-      incrementSongPlays(song.id);
-    }
+    DB.incrementPlays(song.id);
 
     res.status(streamResp.status);
     res.setHeader('Content-Type', resolved.filePath.endsWith('.m4a') ? 'audio/mp4' : 'audio/mpeg');
     res.setHeader('Accept-Ranges', 'bytes');
     res.setHeader('Cache-Control', 'public, max-age=3600');
+
+    // اگر درخواست دانلود با ?download=1 باشد
+    if (req.query.download === '1') {
+      const ext = resolved.filePath.endsWith('.m4a') ? 'm4a' : 'mp3';
+      const cleanFilename = `${song.performer} - ${song.title}.${ext}`.replace(/[\\/:*?"<>|]/g, '_');
+      res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(cleanFilename)}`);
+    }
 
     if (streamResp.headers['content-length']) {
       res.setHeader('Content-Length', streamResp.headers['content-length']);
@@ -873,8 +506,9 @@ app.get('/api/stream/:uid', async (req, res) => {
   }
 });
 
+// ارسال مستقیم موزیک به پی‌وی تلگرام کاربر
 app.post('/api/send/:uid', async (req, res) => {
-  const song = getActiveSongByUidOrId(req.params.uid);
+  const song = DB.getSongByUid(req.params.uid);
   if (!song) return res.status(404).json({ detail: 'موزیک یافت نشد' });
 
   const deepLink = BOT_USERNAME ? `https://t.me/${BOT_USERNAME}?start=song_${song.id}` : '';
@@ -884,81 +518,98 @@ app.post('/api/send/:uid', async (req, res) => {
     return res.status(400).json({
       need_start: true,
       deep_link: deepLink,
-      detail: 'در حال انتقال به ربات برای دریافت فایل...'
+      detail: 'لطفاً ابتدا ربات را در تلگرام استارت کنید.'
     });
   }
 
   const caption = `🎵 ${song.performer} - ${song.title}\n🎧 ارسال شده از مینی‌اپ GapMusic`;
-  const resolved = await resolvePlayableFile(song);
+  const resolved = await resolvePlayableFile(song, userId);
 
-  try {
-    if (resolved?.fileId) {
+  if (resolved?.alreadyDelivered) {
+    return res.json({ status: 'ok' });
+  }
+
+  // تلاش ۱: ارسال مستقیم با file_id
+  if (resolved?.fileId) {
+    try {
+      const r = await axios.post(`${TELEGRAM_API}/sendAudio`, {
+        chat_id: userId,
+        audio: resolved.fileId,
+        caption
+      });
+      if (r.data.ok) return res.json({ status: 'ok' });
+    } catch (e1) {
       try {
-        const r = await axios.post(`${TELEGRAM_API}/sendAudio`, {
-          chat_id: userId,
-          audio: resolved.fileId,
-          caption
-        });
-        if (r.data.ok) return res.json({ status: 'ok' });
-      } catch (e1) {
         const r2 = await axios.post(`${TELEGRAM_API}/sendDocument`, {
           chat_id: userId,
           document: resolved.fileId,
           caption
         });
         if (r2.data.ok) return res.json({ status: 'ok' });
-      }
+      } catch (e2) {}
     }
+  }
 
-    if (song.from_chat_id && song.message_id) {
-      const r3 = await axios.post(`${TELEGRAM_API}/copyMessage`, {
+  // تلاش ۲: ارسال از طریق آدرس مستقیم فایل تلگرام (چون استریم کار می‌کند، این روش قطعی است!)
+  if (resolved?.filePath) {
+    try {
+      const fileUrl = `${resolved.fileApi || TELEGRAM_FILE_API}/${resolved.filePath}`;
+      const r3 = await axios.post(`${TELEGRAM_API}/sendAudio`, {
+        chat_id: userId,
+        audio: fileUrl,
+        caption
+      });
+      if (r3.data.ok) {
+        if (r3.data.result?.audio?.file_id) {
+          DB.updateSongFile(song.id, { file_id: r3.data.result.audio.file_id });
+        }
+        return res.json({ status: 'ok' });
+      }
+    } catch (e3) {
+      console.error('Send via URL failed:', e3.response?.data || e3.message);
+    }
+  }
+
+  // تلاش ۳: کپی پیام
+  if (song.from_chat_id && song.message_id) {
+    try {
+      const r4 = await axios.post(`${TELEGRAM_API}/copyMessage`, {
         chat_id: userId,
         from_chat_id: song.from_chat_id,
         message_id: song.message_id,
         caption
       });
-      if (r3.data.ok) return res.json({ status: 'ok' });
-    }
-
-    res.status(400).json({
-      need_start: true,
-      deep_link: deepLink,
-      detail: 'در حال باز کردن ربات برای تحویل فایل...'
-    });
-  } catch (err) {
-    res.status(400).json({
-      need_start: true,
-      deep_link: deepLink,
-      detail: 'ابتدا باید ربات را استارت کنید.'
-    });
+      if (r4.data.ok) return res.json({ status: 'ok' });
+    } catch (e4) {}
   }
+
+  res.status(400).json({
+    need_start: true,
+    deep_link: deepLink,
+    detail: `عدم دسترسی به فایل تلگرام: ${resolved?.error || 'فایل در دسترس نیست'}`
+  });
 });
 
 // ---------------------------------------------------------------------------
-// ربات تلگرام Telegraf
+// Telegram Bot (Telegraf)
 // ---------------------------------------------------------------------------
 const bot = new Telegraf(BOT_TOKEN);
 const userSessions = new Map();
 
-// جلوگیری از کرش شدن ربات در صورت بروز خطاهای تلگرام
-bot.catch((err, ctx) => {
-  console.error(`⚠️ خطا در پردازش ${ctx.updateType}:`, err.message);
-});
-
 function buildMainMenu(userId) {
-  const activeCount = getActiveSongsCount();
-  const favCount = db.prepare('SELECT COUNT(*) AS c FROM favorites WHERE user_id = ?').get(String(userId)).c;
+  const stats = DB.getStats();
+  const favCount = DB.getUserFavorites(userId).favorite_ids.length;
 
   const text =
     `سلام! 👋 به ربات و پلیر هوشمند **GapMusic** خوش آمدید.\n\n` +
-    `🎼 آرشیو موزیک‌های فعال: **${activeCount}** ترک 🎵\n` +
+    `🎼 آرشیو موزیک‌های فعال: **${stats.total_songs}** ترک 🎵\n` +
     `❤️ پلی‌لیست شخصی شما: **${favCount}** موزیک\n` +
-    `📤 هر موزیکی که بفرستید به صورت خودکار به آرشیو اضافه می‌شود!\n\n` +
+    `📤 هر موزیکی که بفرستید به صورت خودکار به دیتابیس اضافه می‌شود!\n\n` +
     `💡 نام خواننده یا آهنگ را به فارسی یا انگلیسی تایپ کنید:`;
 
   const rows = [];
-  if (MINI_APP_URL.startsWith('https://')) {
-    rows.push([Markup.button.webApp('🎧 ورود به مینی‌اپ GapMusic', MINI_APP_URL)]);
+  if (WEB_APP_URL) {
+    rows.push([Markup.button.webApp('🎧 ورود به مینی‌اپ GapMusic', WEB_APP_URL)]);
   }
   rows.push([
     Markup.button.callback('🎵 کل موزیک‌ها', 'list_all'),
@@ -972,10 +623,11 @@ function buildMainMenu(userId) {
     Markup.button.callback(`❤️ پلی‌لیست من (${favCount})`, 'my_favorites'),
     Markup.button.callback('📩 درخواست موزیک', 'request_song')
   ]);
-  rows.push([
-    Markup.button.switchToCurrentChat('⚡ سرچ آنی (Inline)', '.'),
-    Markup.button.url('🌐 گپ ما', GROUP_URL)
-  ]);
+  const lastRow = [Markup.button.switchToCurrentChat('⚡ سرچ آنی (Inline)', '.')];
+  if (GROUP_URL && GROUP_URL.startsWith('http')) {
+    lastRow.push(Markup.button.url('🌐 کانال / گپ ما', GROUP_URL));
+  }
+  rows.push(lastRow);
 
   if (isAdmin(userId)) {
     rows.push([Markup.button.callback('🛡️ پنل مدیریت ادمین', 'admin_panel')]);
@@ -990,7 +642,7 @@ function buildSongListKeyboard(songs, page = 0, perPage = 6) {
   const slice = songs.slice(safePage * perPage, (safePage + 1) * perPage);
 
   const rows = slice.map(s => {
-    const icon = (s.plays || 0) >= 10 ? '🔥' : '🎵';
+    const icon = s.plays >= 10 ? '🔥' : '🎵';
     return [Markup.button.callback(`${icon} ${s.performer} - ${s.title}`.slice(0, 58), `dl_${s.id}`)];
   });
 
@@ -1000,19 +652,20 @@ function buildSongListKeyboard(songs, page = 0, perPage = 6) {
   if (safePage < totalPages - 1) nav.push(Markup.button.callback('بعدی ▶️', `page_${safePage + 1}`));
   rows.push(nav);
 
-  if (MINI_APP_URL.startsWith('https://')) {
-    rows.push([Markup.button.webApp('🎧 پخش آنلاین در مینی‌اپ', MINI_APP_URL)]);
+  if (WEB_APP_URL) {
+    rows.push([Markup.button.webApp('🎧 پخش آنلاین در مینی‌اپ', WEB_APP_URL)]);
   }
   rows.push([Markup.button.callback('🔙 منوی اصلی', 'main_menu')]);
   return Markup.inlineKeyboard(rows);
 }
 
+// ارسال مطمئن و چندمرحله‌ای موزیک در چت ربات
 async function sendSongToChat(ctx, chatId, song, userId) {
-  incrementSongPlays(song.id);
-  const updatedPlays = (song.plays || 0) + 1;
+  DB.incrementPlays(song.id);
 
-  const liked = isSongFavorited(userId, song.id);
-  const likeBtnText = liked ? `❤️ در پلی‌لیست (${song.likes || 0})` : `🤍 افزودن به پلی‌لیست (${song.likes || 0})`;
+  const favs = DB.getUserFavorites(userId).favorite_ids;
+  const liked = favs.includes(song.id);
+  const likeBtnText = liked ? `❤️ در پلی‌لیست (${song.likes})` : `🤍 افزودن به پلی‌لیست (${song.likes})`;
 
   const rows = [
     [
@@ -1023,38 +676,63 @@ async function sendSongToChat(ctx, chatId, song, userId) {
   if (isAdmin(userId)) {
     rows.push([Markup.button.callback('🗑️ حذف این آهنگ (ادمین)', `admdel_${song.id}`)]);
   }
-  if (MINI_APP_URL.startsWith('https://')) {
-    rows.push([Markup.button.webApp('🎧 باز کردن پلیر مینی‌اپ', MINI_APP_URL)]);
+  if (WEB_APP_URL) {
+    rows.push([Markup.button.webApp('🎧 باز کردن پلیر مینی‌اپ', WEB_APP_URL)]);
   }
 
-  const caption = `🎵 ${song.performer} - ${song.title}\n▶️ دریافت: ${updatedPlays} مرتبه | 🆔 #${song.id}`;
+  const caption = `🎵 ${song.performer} - ${song.title}\n▶️ دریافت: ${song.plays + 1} مرتبه | 🆔 #${song.id}`;
   const extra = { caption, ...Markup.inlineKeyboard(rows) };
 
-  const resolved = await resolvePlayableFile(song);
+  // ارسال با انتقال مستقیم به خود چت کاربر
+  const resolved = await resolvePlayableFile(song, chatId);
+
+  if (resolved?.alreadyDelivered) {
+    return true;
+  }
+
+  // تلاش ۱: با file_id
   if (resolved?.fileId) {
     try {
       await ctx.telegram.sendAudio(chatId, resolved.fileId, extra);
       return true;
-    } catch (e) {
+    } catch (e1) {
       try {
         await ctx.telegram.sendDocument(chatId, resolved.fileId, extra);
         return true;
-      } catch (err) {}
+      } catch (e2) {}
     }
   }
 
+  // تلاش ۲: ارسال از طریق آدرس فایل (چون استریم کار می‌کند، این روش موفق می‌شود!)
+  if (resolved?.filePath) {
+    try {
+      const fileUrl = `${resolved.fileApi || TELEGRAM_FILE_API}/${resolved.filePath}`;
+      const sent = await ctx.telegram.sendAudio(chatId, { url: fileUrl }, extra);
+      if (sent?.audio?.file_id) {
+        DB.updateSongFile(song.id, { file_id: sent.audio.file_id });
+      }
+      return true;
+    } catch (eUrl) {
+      console.error('Send via URL in bot failed:', eUrl.response?.data || eUrl.message);
+    }
+  }
+
+  // تلاش ۳: کپی پیام
   if (song.from_chat_id && song.message_id) {
     try {
       await ctx.telegram.copyMessage(chatId, song.from_chat_id, song.message_id, extra);
       return true;
-    } catch (e) {}
+    } catch (eCopy) {}
   }
 
+  await ctx.reply(
+    `⚠️ متأسفانه فایل این موزیک در تلگرام در دسترس نیست.\nمی‌توانید آن را از طریق دکمه «🎧 پخش آنلاین در مینی‌اپ» گوش دهید یا دانلود کنید.`
+  );
   return false;
 }
 
 bot.start(async (ctx) => {
-  registerUser(ctx.from);
+  DB.registerUser(ctx.from);
 
   const rawText = ctx.message?.text || '';
   const parts = rawText.trim().split(/\s+/);
@@ -1062,7 +740,7 @@ bot.start(async (ctx) => {
 
   if (payload.startsWith('song_')) {
     const songId = parseInt(payload.replace('song_', ''), 10);
-    const song = getSongById(songId);
+    const song = DB.getSongById(songId);
 
     if (!song) {
       await ctx.reply('❌ متأسفانه این موزیک در آرشیو پیدا نشد.');
@@ -1074,6 +752,7 @@ bot.start(async (ctx) => {
     await ctx.telegram.deleteMessage(ctx.chat.id, waitMsg.message_id).catch(() => {});
 
     if (ok) return;
+
     await ctx.reply('⚠️ دسترسی به فایل این موزیک برقرار نشد.');
     return;
   }
@@ -1084,19 +763,20 @@ bot.start(async (ctx) => {
 
 bot.command('admin', async (ctx) => {
   if (!isAdmin(ctx.from.id)) return;
+  const stats = DB.getStats();
   const msg =
-    `🛡️ **پنل مدیریت ادمین GapMusic (SQLite)**\n\n` +
-    `🎵 کل موزیک‌های فعال: **${getActiveSongsCount()}**\n` +
-    `👥 تعداد کاربران: **${getUsersCount()}**\n` +
-    `📩 درخواست‌های در انتظار: **${getRequestsCount(true)}** (کل: ${getRequestsCount()})\n\n` +
+    `🛡️ **پنل مدیریت ادمین GapMusic (نسخه دیتابیس SQLite)**\n\n` +
+    `🎵 کل موزیک‌های فعال: **${stats.total_songs}**\n` +
+    `👥 تعداد کاربران: **${stats.total_users}**\n` +
+    `📩 درخواست‌های در انتظار: **${stats.pending_requests}** (کل: ${stats.total_requests})\n\n` +
     `📌 **روش‌های حذف آهنگ:**\n` +
     `1️⃣ داخل مینی‌اپ، روی دکمه 🗑️ کنار هر آهنگ بزنید.\n` +
     `2️⃣ دستور \`/del کد_آهنگ\` را بفرستید (مثلاً: \`/del 125\`).`;
 
   await ctx.replyWithMarkdown(msg, Markup.inlineKeyboard([
-    [Markup.button.webApp('🛡️ ورود به پنل مدیریتی در مینی‌اپ', MINI_APP_URL)],
-    [Markup.button.callback('📦 دریافت بکاپ دیتابیس SQLite', 'admin_export')]
-  ]));
+    WEB_APP_URL ? [Markup.button.webApp('🛡️ ورود به پنل مدیریتی در مینی‌اپ', WEB_APP_URL)] : [],
+    [Markup.button.callback('📦 دریافت فایل دیتابیس', 'admin_export')]
+  ].filter(r => r.length > 0)));
 });
 
 bot.command('del', async (ctx) => {
@@ -1105,66 +785,51 @@ bot.command('del', async (ctx) => {
   const songId = parseInt(parts[1], 10);
   if (!songId) return ctx.reply('⚠️ فرمت صحیح: `/del 120`', { parse_mode: 'Markdown' });
 
-  const removed = deleteSongById(songId);
+  const removed = DB.deleteSong(songId);
   if (!removed) return ctx.reply('❌ آهنگی با این کد پیدا نشد.');
   await ctx.reply(`🗑️ موزیک «${removed.performer} - ${removed.title}» (کد #${songId}) با موفقیت حذف شد.`);
 });
 
 bot.action('admin_panel', async (ctx) => {
   if (!isAdmin(ctx.from.id)) return ctx.answerCbQuery('دسترسی غیرمجاز', { show_alert: true });
+  const stats = DB.getStats();
   const msg =
-    `🛡️ **پنل مدیریت ادمین GapMusic (SQLite)**\n\n` +
-    `🎵 کل موزیک‌های فعال: **${getActiveSongsCount()}**\n` +
-    `👥 تعداد کاربران: **${getUsersCount()}**\n` +
-    `📩 درخواست‌های در انتظار: **${getRequestsCount(true)}**\n\n` +
+    `🛡️ **پنل مدیریت ادمین GapMusic (نسخه SQLite)**\n\n` +
+    `🎵 کل موزیک‌های فعال: **${stats.total_songs}**\n` +
+    `👥 تعداد کاربران: **${stats.total_users}**\n` +
+    `📩 درخواست‌های در انتظار: **${stats.pending_requests}**\n\n` +
     `💡 برای حذف سریع: دستور \`/del کد_آهنگ\` را بفرستید یا در مینی‌اپ آیکون 🗑️ را بزنید.`;
+
+  const rows = [];
+  if (WEB_APP_URL) {
+    rows.push([Markup.button.webApp('🛡️ مدیریت و حذف در مینی‌اپ', WEB_APP_URL)]);
+  }
+  rows.push([Markup.button.callback('📦 دریافت فایل دیتابیس', 'admin_export')]);
+  rows.push([Markup.button.callback('🔙 منوی اصلی', 'main_menu')]);
 
   await ctx.editMessageText(msg, {
     parse_mode: 'Markdown',
-    ...Markup.inlineKeyboard([
-      [Markup.button.webApp('🛡️ مدیریت و حذف در مینی‌اپ', MINI_APP_URL)],
-      [Markup.button.callback('📦 دریافت بکاپ دیتابیس SQLite', 'admin_export')],
-      [Markup.button.callback('🔙 منوی اصلی', 'main_menu')]
-    ])
+    ...Markup.inlineKeyboard(rows)
   }).catch(() => {});
   await ctx.answerCbQuery();
 });
 
-async function sendDbBackup(ctx) {
-  const backupPath = path.join(path.dirname(DB_PATH), `backup_${Date.now()}.db`);
-  try {
-    await db.backup(backupPath);
-    await ctx.replyWithDocument(
-      { source: backupPath, filename: 'gapmusic.db' },
-      { caption: `📦 بکاپ کامل دیتابیس SQLite | کل آهنگ‌های فعال: ${getActiveSongsCount()}` }
-    );
-  } catch (e) {
-    if (fs.existsSync(DB_PATH)) {
-      await ctx.replyWithDocument(
-        { source: DB_PATH, filename: 'gapmusic.db' },
-        { caption: `📦 فایل دیتابیس SQLite | کل آهنگ‌های فعال: ${getActiveSongsCount()}` }
-      );
-    }
-  } finally {
-    if (fs.existsSync(backupPath)) fs.unlinkSync(backupPath);
-  }
-}
-
 bot.action('admin_export', async (ctx) => {
   if (!isAdmin(ctx.from.id)) return ctx.answerCbQuery();
-  await ctx.answerCbQuery('📦 در حال تهیه بکاپ...');
-  await sendDbBackup(ctx);
-});
-
-bot.command('export_db', async (ctx) => {
-  if (!isAdmin(ctx.from.id)) return;
-  await sendDbBackup(ctx);
+  await ctx.answerCbQuery('📦 در حال ارسال فایل...');
+  const dbFile = path.join(__dirname, 'gapmusic.db');
+  if (fs.existsSync(dbFile)) {
+    await ctx.replyWithDocument(
+      { source: dbFile, filename: 'gapmusic.db' },
+      { caption: `📦 بکاپ دیتابیس SQLite | کل آهنگ‌ها: ${DB.getStats().total_songs}` }
+    );
+  }
 });
 
 bot.action(/^admdel_(\d+)$/, async (ctx) => {
   if (!isAdmin(ctx.from.id)) return ctx.answerCbQuery('فقط ادمین اجازه حذف دارد!', { show_alert: true });
   const songId = parseInt(ctx.match[1], 10);
-  const removed = deleteSongById(songId);
+  const removed = DB.deleteSong(songId);
   if (!removed) return ctx.answerCbQuery('قبلاً حذف شده است.', { show_alert: true });
   await ctx.answerCbQuery(`🗑️ آهنگ #${songId} حذف شد!`, { show_alert: true });
   await ctx.deleteMessage().catch(() => {});
@@ -1173,7 +838,7 @@ bot.action(/^admdel_(\d+)$/, async (ctx) => {
 bot.action('noop', (ctx) => ctx.answerCbQuery());
 
 bot.action('main_menu', async (ctx) => {
-  registerUser(ctx.from);
+  DB.registerUser(ctx.from);
   userSessions.delete(ctx.from.id);
   const { text, keyboard } = buildMainMenu(ctx.from.id);
   await ctx.editMessageText(text, { parse_mode: 'Markdown', ...keyboard }).catch(() => {});
@@ -1181,38 +846,38 @@ bot.action('main_menu', async (ctx) => {
 });
 
 bot.action('list_all', async (ctx) => {
-  const { total, items } = getSongsPage('all', 0, 120);
-  userSessions.set(ctx.from.id, { list: items.map(s => s.id) });
-  await ctx.editMessageText(`🎵 کل موزیک‌های فعال (${total} ترک | ۱۲۰ ترک اخیر):`, buildSongListKeyboard(items, 0)).catch(() => {});
+  const result = DB.getSongs({ filter: 'all', limit: 60 });
+  userSessions.set(ctx.from.id, { list: result.items.map(s => s.id) });
+  await ctx.editMessageText(`🎵 کل موزیک‌های فعال (${result.total} ترک):`, buildSongListKeyboard(result.items, 0)).catch(() => {});
   await ctx.answerCbQuery();
 });
 
 bot.action('top_songs', async (ctx) => {
-  const { items } = getSongsPage('popular', 0, 60);
-  userSessions.set(ctx.from.id, { list: items.map(s => s.id) });
-  await ctx.editMessageText('🔥 پرطرفدارترین موزیک‌ها:', buildSongListKeyboard(items, 0)).catch(() => {});
+  const result = DB.getSongs({ filter: 'popular', limit: 60 });
+  userSessions.set(ctx.from.id, { list: result.items.map(s => s.id) });
+  await ctx.editMessageText('🔥 پرطرفدارترین موزیک‌ها:', buildSongListKeyboard(result.items, 0)).catch(() => {});
   await ctx.answerCbQuery();
 });
 
 bot.action('newest_songs', async (ctx) => {
-  const { items } = getSongsPage('all', 0, 60);
-  userSessions.set(ctx.from.id, { list: items.map(s => s.id) });
-  await ctx.editMessageText('🆕 جدیدترین موزیک‌های آرشیو:', buildSongListKeyboard(items, 0)).catch(() => {});
+  const result = DB.getSongs({ filter: 'newest', limit: 60 });
+  userSessions.set(ctx.from.id, { list: result.items.map(s => s.id) });
+  await ctx.editMessageText('🆕 جدیدترین موزیک‌های آرشیو:', buildSongListKeyboard(result.items, 0)).catch(() => {});
   await ctx.answerCbQuery();
 });
 
 bot.action('my_favorites', async (ctx) => {
-  const { items } = getUserFavorites(ctx.from.id);
-  if (!items.length) {
+  const favResult = DB.getUserFavorites(ctx.from.id);
+  if (!favResult.items.length) {
     return ctx.answerCbQuery('پلی‌لیست شما خالی است! زیر آهنگ‌ها روی 🤍 بزنید.', { show_alert: true });
   }
-  userSessions.set(ctx.from.id, { list: items.map(s => s.id) });
-  await ctx.editMessageText(`❤️ پلی‌لیست شخصی شما (${items.length} ترک):`, buildSongListKeyboard(items, 0)).catch(() => {});
+  userSessions.set(ctx.from.id, { list: favResult.items.map(s => s.id) });
+  await ctx.editMessageText(`❤️ پلی‌لیست شخصی شما (${favResult.items.length} ترک):`, buildSongListKeyboard(favResult.items, 0)).catch(() => {});
   await ctx.answerCbQuery();
 });
 
 bot.action('random_song', async (ctx) => {
-  const song = getRandomActiveSong();
+  const song = DB.getRandomSong();
   if (!song) return ctx.answerCbQuery('آهنگی یافت نشد', { show_alert: true });
   await ctx.answerCbQuery('🎲 در حال ارسال موزیک شانسی...');
   await sendSongToChat(ctx, ctx.chat.id, song, ctx.from.id);
@@ -1229,15 +894,15 @@ bot.action('request_song', async (ctx) => {
 
 bot.action(/^dl_(\d+)$/, async (ctx) => {
   const songId = parseInt(ctx.match[1], 10);
-  const song = getActiveSongByUidOrId(songId);
+  const song = DB.getSongById(songId);
   if (!song) return ctx.answerCbQuery('موزیک یافت نشد', { show_alert: true });
-  await ctx.answerCbQuery('⏳ در حال ارسال...');
+  await ctx.answerCbQuery('⏳ در حال آماده‌سازی و ارسال...');
   await sendSongToChat(ctx, ctx.chat.id, song, ctx.from.id);
 });
 
 bot.action(/^like_(\d+)$/, async (ctx) => {
   const songId = parseInt(ctx.match[1], 10);
-  const { liked, likes } = toggleFavorite(ctx.from.id, songId);
+  const { liked, likes } = DB.toggleFavorite(ctx.from.id, songId);
   const likeBtnText = liked ? `❤️ در پلی‌لیست (${likes})` : `🤍 افزودن به پلی‌لیست (${likes})`;
 
   const rows = [
@@ -1249,8 +914,8 @@ bot.action(/^like_(\d+)$/, async (ctx) => {
   if (isAdmin(ctx.from.id)) {
     rows.push([Markup.button.callback('🗑️ حذف این آهنگ (ادمین)', `admdel_${songId}`)]);
   }
-  if (MINI_APP_URL.startsWith('https://')) {
-    rows.push([Markup.button.webApp('🎧 باز کردن پلیر مینی‌اپ', MINI_APP_URL)]);
+  if (WEB_APP_URL) {
+    rows.push([Markup.button.webApp('🎧 باز کردن پلیر مینی‌اپ', WEB_APP_URL)]);
   }
   await ctx.editMessageReplyMarkup(Markup.inlineKeyboard(rows).reply_markup).catch(() => {});
   await ctx.answerCbQuery(liked ? '❤️ به پلی‌لیست اضافه شد!' : '💔 از پلی‌لیست حذف شد.');
@@ -1262,12 +927,12 @@ bot.action(/^page_(\d+)$/, async (ctx) => {
   if (!session || !session.list) {
     return ctx.answerCbQuery('نتایج منقضی شده‌اند، دوباره جستجو کنید.', { show_alert: true });
   }
-  const songs = getSongsByIds(session.list);
+  const songs = session.list.map(id => DB.getSongById(id)).filter(Boolean);
   await ctx.editMessageReplyMarkup(buildSongListKeyboard(songs, page).reply_markup).catch(() => {});
   await ctx.answerCbQuery();
 });
 
-// دریافت فایل صوتی و ذخیره مستقیم در SQLite
+// دریافت فایل صوتی جدید و ذخیره در SQLite
 bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
   const msg = ctx.message || ctx.channelPost;
   if (!msg) return next();
@@ -1275,32 +940,24 @@ bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
   const audio = msg.audio || (msg.document && (msg.document.mime_type || '').startsWith('audio/') ? msg.document : null);
   if (!audio) return next();
 
-  if (ctx.from) registerUser(ctx.from);
+  if (ctx.from) DB.registerUser(ctx.from);
 
   const rawTitle = audio.title || (audio.file_name ? path.parse(audio.file_name).name : 'نامشخص');
   const title = cleanDisplayText(rawTitle);
   const performer = cleanDisplayText(audio.performer || 'نامشخص');
-  const normSearch = expandBilingualTerms(`${title} ${performer}`);
-  const fileUniqueId = audio.file_unique_id || '';
-  const mediaType = msg.audio ? 'audio' : 'document';
+  const normSearch = DB.expandBilingualTerms(`${title} ${performer}`);
 
-  let exists = null;
-  if (fileUniqueId) {
-    exists = db.prepare('SELECT * FROM songs WHERE file_unique_id = ? LIMIT 1').get(fileUniqueId);
-  }
-  if (!exists && normSearch.length > 3) {
-    exists = db.prepare('SELECT * FROM songs WHERE search_text = ? LIMIT 1').get(normSearch);
-  }
+  const exists = DB.findSongByUniqueIdOrSearch(audio.file_unique_id, normSearch);
 
   if (exists) {
-    db.prepare(`
-      UPDATE songs
-      SET file_id = ?, file_unique_id = ?, from_chat_id = ?, message_id = ?, media_type = ?, available = 1
-      WHERE id = ?
-    `).run(audio.file_id, fileUniqueId || exists.file_unique_id, String(ctx.chat.id), msg.message_id, mediaType, exists.id);
+    DB.updateSongFile(exists.id, {
+      file_id: audio.file_id,
+      file_unique_id: audio.file_unique_id || exists.file_unique_id,
+      from_chat_id: ctx.chat.id,
+      message_id: msg.message_id
+    });
 
-    const updated = getSongById(exists.id);
-    notifyFulfilledRequests(updated).catch(() => {});
+    notifyFulfilledRequests(exists).catch(() => {});
 
     if (!ctx.channelPost) {
       const dupMsg =
@@ -1313,24 +970,25 @@ bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
     return;
   }
 
-  const maxRow = db.prepare('SELECT COALESCE(MAX(id), 0) AS maxId FROM songs').get();
-  const newId = maxRow.maxId + 1;
-  const uid = `${newId}_${msg.message_id}`;
+  const newSong = DB.addSong({
+    from_chat_id: ctx.chat.id,
+    message_id: msg.message_id,
+    file_id: audio.file_id,
+    file_unique_id: audio.file_unique_id || '',
+    title,
+    performer,
+    search_text: normSearch,
+    media_type: msg.audio ? 'audio' : 'document'
+  });
 
-  db.prepare(`
-    INSERT INTO songs (id, uid, from_chat_id, message_id, file_id, file_unique_id, title, performer, search_text, media_type, plays, likes, available)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 1)
-  `).run(newId, uid, String(ctx.chat.id), msg.message_id, audio.file_id, fileUniqueId, title, performer, normSearch, mediaType);
-
-  const newSong = getSongById(newId);
   notifyFulfilledRequests(newSong).catch(() => {});
 
   if (!ctx.channelPost) {
     const confirmMsg =
-      `✅ موزیک با موفقیت در دیتابیس SQLite ذخیره شد!\n\n` +
+      `✅ موزیک با موفقیت در دیتابیس ذخیره شد!\n\n` +
       `🎵 خواننده: ${performer}\n` +
       `🎧 نام آهنگ: ${title}\n` +
-      `📌 کد ثبت شده: ${newId}`;
+      `📌 کد ثبت شده: ${newSong.id}`;
 
     await sendAutoDeleteReply(ctx, confirmMsg, 5000);
   }
@@ -1339,7 +997,7 @@ bot.on(['audio', 'document', 'channel_post'], async (ctx, next) => {
 bot.on('text', async (ctx) => {
   const text = ctx.message.text.trim();
   if (!text || text.startsWith('/')) return;
-  registerUser(ctx.from);
+  DB.registerUser(ctx.from);
 
   let query = text;
   if (ctx.chat.type !== 'private') {
@@ -1350,12 +1008,13 @@ bot.on('text', async (ctx) => {
   const session = userSessions.get(ctx.from.id);
   if (ctx.chat.type === 'private' && session?.awaitingRequest) {
     userSessions.delete(ctx.from.id);
-    await submitSongRequest(ctx.from.id, ctx.from.first_name, query);
+    DB.addSongRequest(ctx.from.id, ctx.from.first_name, query);
     await ctx.reply(`✅ درخواست شما برای «${query}» ثبت شد و به ادمین ارسال گردید.\nبه محض آپلود، در پی‌وی به شما خبر می‌دهم!`);
     return;
   }
 
-  const results = smartSearchSongs(query, { limit: 100 });
+  const searchResult = DB.searchSongs(query, { limit: 60 });
+  const results = searchResult.items;
 
   if (!results.length) {
     userSessions.set(ctx.from.id, { pendingQuery: query });
@@ -1370,7 +1029,7 @@ bot.on('text', async (ctx) => {
 
   userSessions.set(ctx.from.id, { list: results.map(s => s.id) });
   await ctx.reply(
-    `🔍 نتایج جستجو برای «${query}» (${results.length} ترک):`,
+    `🔍 نتایج جستجو برای «${query}» (${searchResult.total} ترک):`,
     buildSongListKeyboard(results, 0)
   );
 });
@@ -1380,101 +1039,71 @@ bot.action('quick_request_pending', async (ctx) => {
   const q = session?.pendingQuery;
   if (!q) return ctx.answerCbQuery('لطفاً دوباره نام آهنگ را تایپ کنید.', { show_alert: true });
   userSessions.delete(ctx.from.id);
-  await submitSongRequest(ctx.from.id, ctx.from.first_name, q);
+  DB.addSongRequest(ctx.from.id, ctx.from.first_name, q);
   await ctx.editMessageText(`✅ درخواست شما برای «${q}» به ادمین ارسال شد.\nبه محض آپلود شدن آهنگ، در پی‌وی به شما خبر می‌دهم!`).catch(() => {});
   await ctx.answerCbQuery('✅ درخواست ثبت شد!');
 });
 
-// سرچ آنی (Inline) با بررسی معتبر بودن file_id و حالت پشتیبان بدون کرش
 bot.on('inline_query', async (ctx) => {
   const rawQ = (ctx.inlineQuery.query || '').trim();
-  let songs = [];
+  const searchResult = rawQ && rawQ !== '.'
+    ? DB.searchSongs(rawQ, { limit: 25 })
+    : DB.getSongs({ filter: 'newest', limit: 25 });
 
-  if (rawQ && rawQ !== '.') {
-    songs = smartSearchSongs(rawQ, { onlyWithFileId: true, limit: 25 });
-  } else {
-    songs = db.prepare(`
-      SELECT * FROM songs
-      WHERE available = 1
-        AND media_type = 'audio'
-        AND file_id LIKE 'CQAC%'
-      ORDER BY id DESC
-      LIMIT 25
-    `).all();
-  }
-
-  const audioSongs = songs.filter(s => s.file_id && s.file_id.startsWith('CQAC'));
-
-  const audioResults = audioSongs.map(s => ({
+  const results = searchResult.items.filter(s => s.file_id).map(s => ({
     type: 'audio',
-    id: `aud_${s.id}`,
+    id: String(s.id),
     audio_file_id: s.file_id,
     caption: `🎵 ${s.performer} - ${s.title}`
   }));
 
-  try {
-    if (audioResults.length > 0) {
-      await ctx.answerInlineQuery(audioResults, { cache_time: 5, is_personal: true });
-      return;
-    }
-  } catch (err) {
-    console.error('⚠️ Inline Audio Error (Fallback to article):', err.message);
-  }
-
-  const fallbackSongs = songs.length
-    ? songs.slice(0, 25)
-    : getSongsPage('all', 0, 25).items;
-
-  const articleResults = fallbackSongs.map(s => {
-    const deepLink = BOT_USERNAME ? `https://t.me/${BOT_USERNAME}?start=song_${s.id}` : MINI_APP_URL;
-    return {
-      type: 'article',
-      id: `art_${s.id}`,
-      title: `${s.title}`,
-      description: `${s.performer}`,
-      input_message_content: {
-        message_text: `🎵 **${s.performer} - ${s.title}**\n🎧 GapMusic`,
-        parse_mode: 'Markdown'
-      },
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '📥 دریافت فایل از ربات', url: deepLink }]
-        ]
-      }
-    };
-  });
-
-  try {
-    await ctx.answerInlineQuery(articleResults, { cache_time: 5, is_personal: true });
-  } catch (e) {
-    console.error('⚠️ Inline Fallback Error:', e.message);
-  }
+  await ctx.answerInlineQuery(results, { cache_time: 5, is_personal: true });
 });
 
 app.listen(PORT, async () => {
-  console.log(`🚀 سرور مینی‌اپ روی پورت ${PORT} با موفقیت بالا آمد.`);
+  console.log(`🚀 سرور مینی‌اپ روی پورت ${PORT} با پایگاه‌داده فوق‌سریع SQLite بالا آمد.`);
   try {
     const me = await bot.telegram.getMe();
     BOT_USERNAME = me.username || '';
     console.log(`🤖 نام کاربری ربات: @${BOT_USERNAME}`);
-  } catch (e) {}
+  } catch (e) {
+    console.log(`⚠️ اتصال به تلگرام: ${e.message}`);
+  }
 
-  if (MINI_APP_URL.startsWith('https://')) {
+  if (WEB_APP_URL) {
     try {
       await bot.telegram.setChatMenuButton({
         menuButton: {
           type: 'web_app',
           text: 'Mini App',
-          web_app: { url: MINI_APP_URL }
+          web_app: { url: WEB_APP_URL }
         }
       });
     } catch (e) {}
   }
 
-  bot.launch({ dropPendingUpdates: true })
-    .then(() => console.log('🤖 ربات تلگرام آنلاین شد!'))
-    .catch((err) => console.error('⚠️ خطا در اتصال ربات:', err.message));
+  async function connectTelegramBot(maxRetries = 10, delayMs = 4000) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await bot.telegram.deleteWebhook({ drop_pending_updates: true }).catch(() => {});
+        await bot.launch({ dropPendingUpdates: true });
+        console.log('✅ ربات تلگرام با موفقیت آنلاین شد و آماده دریافت دستورات است!');
+        return;
+      } catch (err) {
+        if (err.message && err.message.includes('409 Conflict')) {
+          console.warn(`⏳ اخطار 409: کانتینر قبلی هنوز در حال بسته شدن است (تلاش ${attempt}/${maxRetries}). اتصال مجدد ظرف ${delayMs / 1000} ثانیه...`);
+          await new Promise(r => setTimeout(r, delayMs));
+        } else {
+          console.error(`⚠️ وضعیت اتصال ربات (تلاش ${attempt}):`, err.message);
+          await new Promise(r => setTimeout(r, delayMs));
+        }
+      }
+    }
+    console.error('❌ خطا: ربات پس از چند بار تلاش نتوانست وصل شود. لطفاً مطمئن شوید نسخه دیگری از ربات در حال اجرا نیست.');
+  }
+
+  connectTelegramBot();
 });
 
-process.once('SIGINT', () => { bot.stop('SIGINT'); db.close(); });
-process.once('SIGTERM', () => { bot.stop('SIGTERM'); db.close(); });
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
